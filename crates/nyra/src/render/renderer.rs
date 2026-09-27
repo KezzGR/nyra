@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
 use wgpu::{
-    Color, CommandEncoderDescriptor, CurrentSurfaceTexture, Device, DeviceDescriptor,
-    ExperimentalFeatures, Features, Instance, Limits, LoadOp, MemoryHints, Operations,
-    PowerPreference, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions,
-    StoreOp, Surface, SurfaceConfiguration, TextureViewDescriptor, Trace,
+    Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, CurrentSurfaceTexture, Device,
+    DeviceDescriptor, ExperimentalFeatures, Features, FragmentState, Instance, Limits, LoadOp,
+    MemoryHints, MultisampleState, Operations, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface,
+    SurfaceConfiguration, TextureViewDescriptor, Trace, VertexState,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -21,6 +24,7 @@ pub struct Renderer {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+    pipeline: RenderPipeline,
 }
 
 impl Renderer {
@@ -61,12 +65,53 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
+        let shader = device.create_shader_module(ShaderModuleDescriptor {
+            label: Some("Triangle Shader"),
+            source: ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: Some("Triangle Pipeline Layout"),
+            bind_group_layouts: &[],
+            immediate_size: 0,
+        });
+
+        let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: Some("Triangle Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                compilation_options: PipelineCompilationOptions::default(),
+                buffers: &[],
+            },
+            primitive: PrimitiveState {
+                topology: PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: MultisampleState::default(),
+            fragment: Some(FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                compilation_options: PipelineCompilationOptions::default(),
+                targets: &[Some(ColorTargetState {
+                    format: config.format,
+                    blend: None,
+                    write_mask: ColorWrites::ALL,
+                })],
+            }),
+            multiview_mask: None,
+            cache: None,
+        });
+
         Self {
             window,
             surface,
             device,
             queue,
             config,
+            pipeline,
         }
     }
 
@@ -107,7 +152,7 @@ impl Renderer {
             .create_command_encoder(&CommandEncoderDescriptor::default());
 
         {
-            let _pass = encoder.begin_render_pass(&RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     depth_slice: None,
@@ -120,9 +165,13 @@ impl Renderer {
 
                 ..Default::default()
             });
+
+            render_pass.set_pipeline(&self.pipeline);
+            render_pass.draw(0..3, 0..1);
         }
 
         self.window.pre_present_notify();
+
         self.queue.submit([encoder.finish()]);
         self.queue.present(frame);
 
