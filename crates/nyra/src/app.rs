@@ -45,10 +45,10 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::RedrawRequested => {
-                if let Some(renderer) = self.renderer.as_ref() {
+                if let Some(renderer) = self.renderer.as_mut() {
                     renderer.render();
                 }
-                if let Some(window) = self.window.as_ref() {
+                if let Some(window) = self.window.as_mut() {
                     window.request_redraw();
                 }
             }

@@ -19,8 +19,8 @@ those out of the box.
 
 ## Status
 
-Window opens via winit. wgpu context clears the screen and draws
-a triangle from a vertex buffer. No 3D yet, no camera, no depth.
+Window opens via winit. wgpu renders a triangle that rotates via a
+uniform matrix. No 3D yet, no camera, no depth.
 
 ## Stack
 
@@ -29,8 +29,9 @@ a triangle from a vertex buffer. No 3D yet, no camera, no depth.
 - winit — window and input
 - bytemuck — CPU↔GPU data transfer
 - pollster — sync/async bridge
+- glam — math (matrices, vectors)
 
-Planned: glam (math), egui (editor).
+Planned: egui (editor).
 
 ## License
 

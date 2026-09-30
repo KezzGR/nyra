@@ -1,18 +1,27 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
+use glam::Mat4;
 use wgpu::{
-    Buffer, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
+    BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
     CurrentSurfaceTexture, Device, DeviceDescriptor, ExperimentalFeatures, Features, FragmentState,
     Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
     PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
     PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource, StoreOp,
-    Surface, SurfaceConfiguration, TextureViewDescriptor, Trace, VertexState,
+    RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource,
+    ShaderStages, StoreOp, Surface, SurfaceConfiguration, TextureViewDescriptor, Trace,
+    VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::render::mesh::{TRIANGLE_VERTICES, Vertex};
+use crate::render::{
+    TransformUniform,
+    mesh::{TRIANGLE_VERTICES, Vertex},
+};
+
+const ROTATION_SPEED: f32 = 2.0;
 
 const CLEAR_COLOR: Color = Color {
     r: 0.05,
@@ -28,7 +37,11 @@ pub struct Renderer {
     queue: Queue,
     config: SurfaceConfiguration,
     vertex_buffer: Buffer,
+    transform_buffer: Buffer,
+    transform_bind_group: BindGroup,
     pipeline: RenderPipeline,
+    last_frame: Instant,
+    angle: f32,
 }
 
 impl Renderer {
@@ -75,6 +88,37 @@ impl Renderer {
             usage: BufferUsages::VERTEX,
         });
 
+        let transform_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Transform Buffer"),
+            size: size_of::<TransformUniform>() as BufferAddress,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let transform_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("Transform Bind Group Layout"),
+                entries: &[BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Transform Bind Group"),
+            layout: &transform_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: transform_buffer.as_entire_binding(),
+            }],
+        });
+
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Triangle Shader"),
             source: ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
@@ -82,7 +126,7 @@ impl Renderer {
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Triangle Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[Some(&transform_bind_group_layout)],
             immediate_size: 0,
         });
 
@@ -115,6 +159,8 @@ impl Renderer {
             cache: None,
         });
 
+        let last_frame = Instant::now();
+
         Self {
             window,
             surface,
@@ -122,11 +168,23 @@ impl Renderer {
             queue,
             config,
             vertex_buffer,
+            transform_buffer,
+            transform_bind_group,
             pipeline,
+            last_frame,
+            angle: 0.0,
         }
     }
 
-    pub fn render(&self) {
+    pub fn render(&mut self) {
+        let now = Instant::now();
+        let delta_time = (now - self.last_frame).as_secs_f32();
+        self.last_frame = now;
+
+        self.angle += delta_time * ROTATION_SPEED;
+
+        let transform = Mat4::from_rotation_z(self.angle);
+
         let mut needs_reconfigure = false;
 
         let frame = match self.surface.get_current_texture() {
@@ -177,14 +235,22 @@ impl Renderer {
                 ..Default::default()
             });
 
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw(0..3, 0..1);
         }
 
-        self.window.pre_present_notify();
-
+        self.queue.write_buffer(
+            &self.transform_buffer,
+            0,
+            bytemuck::bytes_of(&TransformUniform {
+                matrix: transform.to_cols_array_2d(),
+            }),
+        );
         self.queue.submit([encoder.finish()]);
+
+        self.window.pre_present_notify();
         self.queue.present(frame);
 
         if needs_reconfigure {
