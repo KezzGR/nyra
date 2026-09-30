@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
 use wgpu::{
-    Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, CurrentSurfaceTexture, Device,
-    DeviceDescriptor, ExperimentalFeatures, Features, FragmentState, Instance, Limits, LoadOp,
-    MemoryHints, MultisampleState, Operations, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface,
-    SurfaceConfiguration, TextureViewDescriptor, Trace, VertexState,
+    Buffer, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
+    CurrentSurfaceTexture, Device, DeviceDescriptor, ExperimentalFeatures, Features, FragmentState,
+    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
+    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource, StoreOp,
+    Surface, SurfaceConfiguration, TextureViewDescriptor, Trace, VertexState,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 use winit::{dpi::PhysicalSize, window::Window};
+
+use crate::render::mesh::{TRIANGLE_VERTICES, Vertex};
 
 const CLEAR_COLOR: Color = Color {
     r: 0.05,
@@ -24,6 +27,7 @@ pub struct Renderer {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+    vertex_buffer: Buffer,
     pipeline: RenderPipeline,
 }
 
@@ -65,6 +69,12 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
+        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(TRIANGLE_VERTICES),
+            usage: BufferUsages::VERTEX,
+        });
+
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Triangle Shader"),
             source: ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
@@ -83,7 +93,7 @@ impl Renderer {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: PipelineCompilationOptions::default(),
-                buffers: &[],
+                buffers: &[Some(Vertex::layout())],
             },
             primitive: PrimitiveState {
                 topology: PrimitiveTopology::TriangleList,
@@ -111,6 +121,7 @@ impl Renderer {
             device,
             queue,
             config,
+            vertex_buffer,
             pipeline,
         }
     }
@@ -166,6 +177,7 @@ impl Renderer {
                 ..Default::default()
             });
 
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_pipeline(&self.pipeline);
             render_pass.draw(0..3, 0..1);
         }
