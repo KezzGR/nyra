@@ -2,7 +2,7 @@
 
 A lightweight 3D engine in Rust for anime-style games.
 
-Early development. Nothing renders yet.
+Early development. Renders a triangle. That's it for now.
 
 ## Why
 
@@ -17,9 +17,20 @@ those out of the box.
 - Lightweight editor that runs on weak hardware.
 - Stable API.
 
+## Status
+
+Window opens via winit. wgpu context clears the screen and draws
+a triangle from a vertex buffer. No 3D yet, no camera, no depth.
+
 ## Stack
 
-Rust, wgpu, winit, egui, glam.
+- Rust (edition 2024)
+- wgpu — rendering
+- winit — window and input
+- bytemuck — CPU↔GPU data transfer
+- pollster — sync/async bridge
+
+Planned: glam (math), egui (editor).
 
 ## License
 
