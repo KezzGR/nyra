@@ -2,25 +2,29 @@
 
 A lightweight 3D engine in Rust for anime-style games.
 
-Early development. Renders a triangle. That's it for now.
+Early development. Renders a rotating square made of two triangles.
 
 ## Why
 
-Anime-style 3D in existing engines is painful. Toon shaders, VRM,
-lip-sync — all third-party plugins, half abandoned. Nyra aims to ship
-those out of the box.
+Nyra aims to bring anime-style character rendering tools together in a
+lightweight engine: toon shading, VRM, morph targets, and lip-sync.
+
+These are long-term goals, not implemented features.
 
 ## Goals
 
-- Toon shading, VRM, morph targets, lip-sync — built in, not plugins.
+- Built-in toon shading, VRM, morph targets, and lip-sync.
 - Text-based scene format, mergeable in git.
 - Lightweight editor that runs on weak hardware.
-- Stable API.
+- Simple, stable API.
 
 ## Status
 
-Window opens via winit. wgpu renders a triangle that rotates via a
-uniform matrix. No 3D yet, no camera, no depth.
+Window opens via winit. wgpu renders a square using four vertices and
+six indices. The square rotates around the Z axis via a uniform matrix.
+
+Vertex and index buffers are implemented. No 3D geometry, perspective
+projection, camera, or depth buffer yet.
 
 ## Stack
 
