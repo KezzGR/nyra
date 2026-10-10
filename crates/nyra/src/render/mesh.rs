@@ -32,12 +32,8 @@ pub const SQUARE_VERTICES: &[Vertex] = &[
         position: [0.5, 0.5, 0.0],
     },
     Vertex {
-        position: [0.5, 0.5, 0.0],
-    },
-    Vertex {
         position: [-0.5, 0.5, 0.0],
     },
-    Vertex {
-        position: [-0.5, -0.5, 0.0],
-    },
 ];
+
+pub const SQUARE_INDEXES: &[u16] = &[0, 1, 2, 2, 3, 0];

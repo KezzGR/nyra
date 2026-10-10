@@ -6,7 +6,7 @@ use wgpu::{
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
     BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
     CurrentSurfaceTexture, Device, DeviceDescriptor, ExperimentalFeatures, Features, FragmentState,
-    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
+    IndexFormat, Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
     PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
     PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
     RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource,
@@ -18,7 +18,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::render::{
     TransformUniform,
-    mesh::{SQUARE_VERTICES, Vertex},
+    mesh::{SQUARE_INDEXES, SQUARE_VERTICES, Vertex},
 };
 
 const ROTATION_SPEED: f32 = 2.0;
@@ -37,6 +37,7 @@ pub struct Renderer {
     queue: Queue,
     config: SurfaceConfiguration,
     vertex_buffer: Buffer,
+    index_buffer: Buffer,
     transform_buffer: Buffer,
     transform_bind_group: BindGroup,
     pipeline: RenderPipeline,
@@ -86,6 +87,12 @@ impl Renderer {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(SQUARE_VERTICES),
             usage: BufferUsages::VERTEX,
+        });
+
+        let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(SQUARE_INDEXES),
+            usage: BufferUsages::INDEX,
         });
 
         let transform_buffer = device.create_buffer(&BufferDescriptor {
@@ -168,6 +175,7 @@ impl Renderer {
             queue,
             config,
             vertex_buffer,
+            index_buffer,
             transform_buffer,
             transform_bind_group,
             pipeline,
@@ -236,9 +244,10 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
             render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..6, 0..1);
+            render_pass.draw_indexed(0..6, 0, 0..1);
         }
 
         self.queue.write_buffer(
