@@ -18,7 +18,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::render::{
     TransformUniform,
-    mesh::{TRIANGLE_VERTICES, Vertex},
+    mesh::{SQUARE_VERTICES, Vertex},
 };
 
 const ROTATION_SPEED: f32 = 2.0;
@@ -84,7 +84,7 @@ impl Renderer {
 
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(TRIANGLE_VERTICES),
+            contents: bytemuck::cast_slice(SQUARE_VERTICES),
             usage: BufferUsages::VERTEX,
         });
 
@@ -238,7 +238,7 @@ impl Renderer {
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..3, 0..1);
+            render_pass.draw(0..6, 0..1);
         }
 
         self.queue.write_buffer(

@@ -21,7 +21,7 @@ impl Vertex {
     }
 }
 
-pub const TRIANGLE_VERTICES: &[Vertex] = &[
+pub const SQUARE_VERTICES: &[Vertex] = &[
     Vertex {
         position: [-0.5, -0.5, 0.0],
     },
@@ -30,5 +30,14 @@ pub const TRIANGLE_VERTICES: &[Vertex] = &[
     },
     Vertex {
         position: [0.5, 0.5, 0.0],
+    },
+    Vertex {
+        position: [0.5, 0.5, 0.0],
+    },
+    Vertex {
+        position: [-0.5, 0.5, 0.0],
+    },
+    Vertex {
+        position: [-0.5, -0.5, 0.0],
     },
 ];
