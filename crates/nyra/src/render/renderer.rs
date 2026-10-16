@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
-use glam::Mat4;
+use glam::{Quat, Vec3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
@@ -17,8 +17,8 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::render::{
-    TransformUniform,
-    mesh::{SQUARE_INDEXES, SQUARE_VERTICES, Vertex},
+    Camera, Transform, TransformUniform,
+    mesh::{CUBE_INDEXES, CUBE_VERTICES, Vertex},
 };
 
 const ROTATION_SPEED: f32 = 2.0;
@@ -85,13 +85,13 @@ impl Renderer {
 
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(SQUARE_VERTICES),
+            contents: bytemuck::cast_slice(CUBE_VERTICES),
             usage: BufferUsages::VERTEX,
         });
 
         let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(SQUARE_INDEXES),
+            contents: bytemuck::cast_slice(CUBE_INDEXES),
             usage: BufferUsages::INDEX,
         });
 
@@ -191,7 +191,21 @@ impl Renderer {
 
         self.angle += delta_time * ROTATION_SPEED;
 
-        let transform = Mat4::from_rotation_z(self.angle);
+        let mut cube_transform = Transform::default();
+
+        cube_transform.rotate_from_axis_angle(Vec3::ONE, self.angle);
+
+        let camera_transform =
+            Transform::new([0.0, 0.0, -5.0], Quat::IDENTITY.to_array(), [1.0, 1.0, 1.0]);
+
+        let camera = Camera::new(camera_transform, 70.0, 0.01, 100.0);
+
+        let model = cube_transform.model_matrix();
+        let view = camera.view_matrix();
+        let projection =
+            camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
+
+        let transform_matrix = projection * view * model;
 
         let mut needs_reconfigure = false;
 
@@ -247,14 +261,14 @@ impl Renderer {
             render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
             render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw_indexed(0..6, 0, 0..1);
+            render_pass.draw_indexed(0..36, 0, 0..1);
         }
 
         self.queue.write_buffer(
             &self.transform_buffer,
             0,
             bytemuck::bytes_of(&TransformUniform {
-                matrix: transform.to_cols_array_2d(),
+                matrix: transform_matrix.to_cols_array_2d(),
             }),
         );
         self.queue.submit([encoder.finish()]);

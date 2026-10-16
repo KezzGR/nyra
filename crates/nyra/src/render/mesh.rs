@@ -21,19 +21,34 @@ impl Vertex {
     }
 }
 
-pub const SQUARE_VERTICES: &[Vertex] = &[
+pub const CUBE_VERTICES: &[Vertex] = &[
     Vertex {
-        position: [-0.5, -0.5, 0.0],
+        position: [0.5, 0.5, 0.5],
     },
     Vertex {
-        position: [0.5, -0.5, 0.0],
+        position: [0.5, -0.5, 0.5],
     },
     Vertex {
-        position: [0.5, 0.5, 0.0],
+        position: [-0.5, 0.5, 0.5],
     },
     Vertex {
-        position: [-0.5, 0.5, 0.0],
+        position: [-0.5, -0.5, 0.5],
+    },
+    Vertex {
+        position: [0.5, 0.5, -0.5],
+    },
+    Vertex {
+        position: [0.5, -0.5, -0.5],
+    },
+    Vertex {
+        position: [-0.5, 0.5, -0.5],
+    },
+    Vertex {
+        position: [-0.5, -0.5, -0.5],
     },
 ];
 
-pub const SQUARE_INDEXES: &[u16] = &[0, 1, 2, 2, 3, 0];
+pub const CUBE_INDEXES: &[u16] = &[
+    0, 1, 2, 2, 3, 1, 1, 5, 4, 1, 0, 4, 4, 5, 7, 4, 6, 7, 7, 6, 2, 2, 7, 3, 3, 1, 5, 5, 7, 3, 2, 0,
+    4, 4, 6, 2,
+];
