@@ -205,7 +205,7 @@ impl Renderer {
         let projection =
             camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
 
-        let transform_matrix = projection * view * model;
+        let projection_view_matrix = projection * view;
 
         let mut needs_reconfigure = false;
 
@@ -268,7 +268,8 @@ impl Renderer {
             &self.transform_buffer,
             0,
             bytemuck::bytes_of(&TransformUniform {
-                matrix: transform_matrix.to_cols_array_2d(),
+                model: model.to_cols_array_2d(),
+                projection_view: projection_view_matrix.to_cols_array_2d(),
             }),
         );
         self.queue.submit([encoder.finish()]);
