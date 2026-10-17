@@ -2,7 +2,8 @@
 
 A lightweight 3D engine in Rust for anime-style games.
 
-Early development. Renders a rotating square made of two triangles.
+Early development. Renders a spinning cube with perspective projection
+and basic Lambert lighting. Depth is still a lie.
 
 ## Why
 
@@ -20,11 +21,16 @@ These are long-term goals, not implemented features.
 
 ## Status
 
-Window opens via winit. wgpu renders a square using four vertices and
-six indices. The square rotates around the Z axis via a uniform matrix.
+- Window creation and resize handling via winit.
+- Indexed cube geometry: 24 vertices with face normals, 36 indices.
+- Position, quaternion rotation, and scale transforms.
+- Basic fixed camera with view and perspective projection matrices.
+- Model and projection-view matrices passed through a uniform buffer.
+- Directional Lambert lighting in WGSL.
 
-Vertex and index buffers are implemented. No 3D geometry, perspective
-projection, camera, or depth buffer yet.
+No depth buffer yet: faces can overwrite each other in draw order.
+Camera controls, textures, model loading, and toon shading are not
+implemented.
 
 ## Stack
 
@@ -33,7 +39,7 @@ projection, camera, or depth buffer yet.
 - winit — window and input
 - bytemuck — CPU↔GPU data transfer
 - pollster — sync/async bridge
-- glam — math (matrices, vectors)
+- glam — math (matrices, vectors, quaternions)
 
 Planned: egui (editor).
 
