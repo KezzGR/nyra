@@ -2,8 +2,8 @@
 
 A lightweight 3D engine in Rust for anime-style games.
 
-Early development. Renders a spinning cube with perspective projection
-and basic Lambert lighting. Depth is still a lie.
+Early development. Renders a spinning cube with perspective projection,
+basic Lambert lighting and a depth buffer. Depth is no longer a lie.
 
 ## Why
 
@@ -27,8 +27,9 @@ These are long-term goals, not implemented features.
 - Basic fixed camera with view and perspective projection matrices.
 - Model and projection-view matrices passed through a uniform buffer.
 - Directional Lambert lighting in WGSL.
+- Depth testing and depth writes using a Depth32Float buffer.
+- Depth buffer recreated when the window is resized.
 
-No depth buffer yet: faces can overwrite each other in draw order.
 Camera controls, textures, model loading, and toon shading are not
 implemented.
 
