@@ -4,14 +4,16 @@ use glam::{Quat, Vec3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
-    BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
-    CurrentSurfaceTexture, Device, DeviceDescriptor, ExperimentalFeatures, Features, FragmentState,
-    IndexFormat, Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
-    PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
-    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource,
-    ShaderStages, StoreOp, Surface, SurfaceConfiguration, TextureViewDescriptor, Trace,
-    VertexState,
+    BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompareFunction,
+    CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device, DeviceDescriptor,
+    ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat, Instance, Limits, LoadOp,
+    MemoryHints, MultisampleState, Operations, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
+    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor,
+    ShaderSource, ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration, Texture,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor, Trace, VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 use winit::{dpi::PhysicalSize, window::Window};
@@ -38,6 +40,8 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
+    depth_texture: Texture,
+    depth_view: TextureView,
     transform_buffer: Buffer,
     transform_bind_group: BindGroup,
     pipeline: RenderPipeline,
@@ -102,6 +106,23 @@ impl Renderer {
             mapped_at_creation: false,
         });
 
+        let depth_texture = device.create_texture(&TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: Extent3d {
+                width: config.width.max(1),
+                height: config.height.max(1),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Depth32Float,
+            usage: TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[TextureFormat::Depth32Float],
+        });
+
+        let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
+
         let transform_bind_group_layout =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: Some("Transform Bind Group Layout"),
@@ -150,7 +171,13 @@ impl Renderer {
                 topology: PrimitiveTopology::TriangleList,
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(DepthStencilState {
+                format: TextureFormat::Depth32Float,
+                depth_write_enabled: Some(true),
+                depth_compare: Some(CompareFunction::Less),
+                stencil: StencilState::default(),
+                bias: DepthBiasState::default(),
+            }),
             multisample: MultisampleState::default(),
             fragment: Some(FragmentState {
                 module: &shader,
@@ -177,6 +204,8 @@ impl Renderer {
             vertex_buffer,
             index_buffer,
             transform_buffer,
+            depth_texture,
+            depth_view,
             transform_bind_group,
             pipeline,
             last_frame,
@@ -253,7 +282,14 @@ impl Renderer {
                         store: StoreOp::Store,
                     },
                 })],
-
+                depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                    view: &self.depth_view,
+                    depth_ops: Some(Operations {
+                        load: LoadOp::Clear(1.0),
+                        store: StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 ..Default::default()
             });
 
@@ -289,6 +325,25 @@ impl Renderer {
 
         self.config.width = size.width;
         self.config.height = size.height;
+
+        self.depth_texture = self.device.create_texture(&TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: Extent3d {
+                width: self.config.width.max(1),
+                height: self.config.height.max(1),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Depth32Float,
+            usage: TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[TextureFormat::Depth32Float],
+        });
+
+        self.depth_view = self
+            .depth_texture
+            .create_view(&TextureViewDescriptor::default());
 
         self.surface.configure(&self.device, &self.config);
     }
