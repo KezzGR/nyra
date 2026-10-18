@@ -4,7 +4,7 @@ use crate::render::Vertex;
 
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
-    pub indices: Vec<u16>,
+    pub indices: Vec<u32>,
 }
 
 impl Mesh {
@@ -28,7 +28,7 @@ impl Mesh {
                 let c = h[i] * n;
                 let b = b * sign;
 
-                let base = vertices.len() as u16;
+                let base = vertices.len() as u32;
 
                 for position in [c - a - b, c + a - b, c + a + b, c - a + b] {
                     vertices.push(Vertex::new(position.to_array(), n.to_array()));

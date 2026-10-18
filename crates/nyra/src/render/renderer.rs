@@ -293,7 +293,7 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
             render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw_indexed(0..36, 0, 0..1);
