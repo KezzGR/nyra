@@ -867,10 +867,15 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "glam",
+ "nyra_math",
  "pollster",
  "wgpu",
  "winit",
 ]
+
+[[package]]
+name = "nyra_math"
+version = "0.1.0"
 
 [[package]]
 name = "objc-sys"

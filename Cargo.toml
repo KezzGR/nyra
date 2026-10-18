@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/nyra"]
+members = ["crates/nyra", "crates/nyra_math"]
 
 [workspace.package]
 version = "0.1.0"

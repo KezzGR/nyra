@@ -1,4 +1,4 @@
-use glam::Vec3;
+use nyra_math::Vec3;
 
 use crate::render::Vertex;
 
