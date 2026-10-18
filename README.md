@@ -2,8 +2,9 @@
 
 A lightweight 3D engine in Rust for anime-style games.
 
-Early development. Renders a spinning cube with perspective projection,
-basic Lambert lighting and a depth buffer. Depth is no longer a lie.
+Early development. Renders a procedurally generated spinning cube with
+perspective projection, basic Lambert lighting and a depth buffer.
+Depth is no longer a lie.
 
 ## Why
 
@@ -22,6 +23,7 @@ These are long-term goals, not implemented features.
 ## Status
 
 - Window creation and resize handling via winit.
+- Procedural cube and cuboid generation with configurable dimensions.
 - Indexed cube geometry: 24 vertices with face normals, 36 indices.
 - Position, quaternion rotation, and scale transforms.
 - Basic fixed camera with view and perspective projection matrices.
