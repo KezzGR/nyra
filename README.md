@@ -25,6 +25,7 @@ These are long-term goals, not implemented features.
 - Window creation and resize handling via winit.
 - Procedural cube and cuboid generation with configurable dimensions.
 - Indexed cube geometry: 24 vertices with face normals, 36 indices.
+- Custom Vec3 type in nyra_math, used for procedural mesh generation.
 - Position, quaternion rotation, and scale transforms.
 - Basic fixed camera with view and perspective projection matrices.
 - Model and projection-view matrices passed through a uniform buffer.
@@ -42,7 +43,8 @@ implemented.
 - winit — window and input
 - bytemuck — CPU↔GPU data transfer
 - pollster — sync/async bridge
-- glam — math (matrices, vectors, quaternions)
+- glam — transform and camera math (vectors, matrices, quaternions)
+- nyra_math - custom vector math for procedural mesh generation
 
 Planned: egui (editor).
 
