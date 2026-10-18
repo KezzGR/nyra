@@ -3,9 +3,11 @@ pub mod mesh;
 pub mod renderer;
 pub mod transform;
 pub mod uniform;
+pub mod vertex;
 
 pub use camera::Camera;
-pub use mesh::{CUBE_VERTICES, Vertex};
+pub use mesh::Mesh;
 pub use renderer::Renderer;
 pub use transform::Transform;
 pub use uniform::TransformUniform;
+pub use vertex::Vertex;

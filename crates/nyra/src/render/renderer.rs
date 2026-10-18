@@ -18,10 +18,7 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::render::{
-    Camera, Transform, TransformUniform,
-    mesh::{CUBE_INDEXES, CUBE_VERTICES, Vertex},
-};
+use crate::render::{Camera, Mesh, Transform, TransformUniform, Vertex};
 
 const ROTATION_SPEED: f32 = 2.0;
 
@@ -87,15 +84,17 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
+        let cube = Mesh::cube();
+
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(CUBE_VERTICES),
+            contents: bytemuck::cast_slice(&cube.vertices),
             usage: BufferUsages::VERTEX,
         });
 
         let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(CUBE_INDEXES),
+            contents: bytemuck::cast_slice(&cube.indices),
             usage: BufferUsages::INDEX,
         });
 

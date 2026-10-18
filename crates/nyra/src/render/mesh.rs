@@ -1,134 +1,43 @@
-use bytemuck::{Pod, Zeroable};
-use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use glam::Vec3;
 
-#[repr(C)]
-#[derive(Copy, Clone, Pod, Zeroable)]
-pub struct Vertex {
-    position: [f32; 3],
-    normal: [f32; 3],
+use crate::render::Vertex;
+
+pub struct Mesh {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u16>,
 }
 
-impl Vertex {
-    pub fn layout() -> VertexBufferLayout<'static> {
-        VertexBufferLayout {
-            array_stride: size_of::<Vertex>() as BufferAddress,
-            step_mode: VertexStepMode::Vertex,
-            attributes: &[
-                VertexAttribute {
-                    format: VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                VertexAttribute {
-                    format: VertexFormat::Float32x3,
-                    offset: 12,
-                    shader_location: 1,
-                },
-            ],
+impl Mesh {
+    pub fn cube() -> Self {
+        Mesh::cuboid(Vec3::ONE)
+    }
+
+    pub fn cuboid(size: Vec3) -> Self {
+        let h = size / 2.0;
+        let axes = [Vec3::X, Vec3::Y, Vec3::Z];
+
+        let mut vertices = Vec::with_capacity(24);
+        let mut indices = Vec::with_capacity(36);
+
+        for i in 0..3 {
+            let a = axes[(i + 1) % 3] * h[(i + 1) % 3];
+            let b = axes[(i + 2) % 3] * h[(i + 2) % 3];
+
+            for sign in [-1.0, 1.0] {
+                let n = axes[i] * sign;
+                let c = h[i] * n;
+                let b = b * sign;
+
+                let base = vertices.len() as u16;
+
+                for position in [c - a - b, c + a - b, c + a + b, c - a + b] {
+                    vertices.push(Vertex::new(position.to_array(), n.to_array()));
+                }
+
+                indices.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
+            }
         }
+
+        Self { vertices, indices }
     }
 }
-
-pub const CUBE_VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [0.5, 0.5, 0.5],
-        normal: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.5],
-        normal: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.5],
-        normal: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.5],
-        normal: [0.0, -1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.5],
-        normal: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.5],
-        normal: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, 0.5],
-        normal: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, 0.5],
-        normal: [-1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, 0.5],
-        normal: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.5],
-        normal: [0.0, -1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.5],
-        normal: [-1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.5],
-        normal: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, -0.5],
-        normal: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, -0.5],
-        normal: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, -0.5],
-        normal: [0.0, 0.0, -1.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, -0.5],
-        normal: [0.0, -1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, -0.5],
-        normal: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, -0.5],
-        normal: [0.0, 0.0, -1.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, -0.5],
-        normal: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, -0.5],
-        normal: [-1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, -0.5],
-        normal: [0.0, 0.0, -1.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, -0.5],
-        normal: [0.0, -1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, -0.5],
-        normal: [-1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, -0.5],
-        normal: [0.0, 0.0, -1.0],
-    },
-];
-
-pub const CUBE_INDEXES: &[u16] = &[
-    2, 8, 11, 2, 11, 5, 14, 17, 23, 14, 23, 20, 1, 4, 16, 1, 16, 13, 7, 19, 22, 7, 22, 10, 0, 12,
-    18, 0, 18, 6, 3, 9, 21, 3, 21, 15,
-];
