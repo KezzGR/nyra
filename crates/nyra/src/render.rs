@@ -7,7 +7,6 @@ pub mod vertex;
 
 pub use camera::Camera;
 pub use mesh::Mesh;
-pub use renderer::Renderer;
 pub use transform::Transform;
 pub use uniform::TransformUniform;
 pub use vertex::Vertex;
