@@ -1,23 +1,23 @@
 use glam::{Mat4, Quat, Vec3};
 
 pub struct Transform {
-    pub position: [f32; 3],
-    pub rotation: [f32; 4],
-    pub scale: [f32; 3],
+    pub position: Vec3,
+    pub rotation: Quat,
+    pub scale: Vec3,
 }
 
 impl Default for Transform {
     fn default() -> Self {
         Self {
-            position: [0.0, 0.0, 0.0],
-            rotation: Quat::IDENTITY.to_array(),
-            scale: [1.0, 1.0, 1.0],
+            position: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
         }
     }
 }
 
 impl Transform {
-    pub fn new(position: [f32; 3], rotation: [f32; 4], scale: [f32; 3]) -> Self {
+    pub fn new(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
         Self {
             position,
             rotation,
@@ -26,20 +26,30 @@ impl Transform {
     }
 
     pub fn translate(&mut self, position: Vec3) {
-        self.position[0] += position.to_array()[0];
-        self.position[1] += position.to_array()[1];
-        self.position[2] += position.to_array()[2];
+        self.position += position;
+    }
+
+    pub fn translate_local(&mut self, position: Vec3) {
+        self.position += self.rotation * position;
     }
 
     pub fn rotate_from_axis_angle(&mut self, axis: Vec3, angle: f32) {
-        self.rotation = Quat::from_axis_angle(axis.normalize(), angle).to_array();
+        self.rotation = Quat::from_axis_angle(axis.normalize(), angle);
     }
 
     pub fn model_matrix(&self) -> Mat4 {
-        Mat4::from_scale_rotation_translation(
-            Vec3::from_array(self.scale),
-            Quat::from_array(self.rotation),
-            Vec3::from_array(self.position),
-        )
+        Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.position)
+    }
+
+    pub fn forward(&self) -> Vec3 {
+        self.rotation * Vec3::Z
+    }
+
+    pub fn up(&self) -> Vec3 {
+        self.rotation * Vec3::Y
+    }
+
+    pub fn right(&self) -> Vec3 {
+        self.rotation * Vec3::X
     }
 }

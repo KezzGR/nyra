@@ -1,5 +1,5 @@
 use glam::{
-    Mat4, Vec3,
+    Mat4,
     camera::lh::{proj, view},
 };
 
@@ -34,7 +34,11 @@ impl Camera {
     }
 
     pub fn view_matrix(&self) -> Mat4 {
-        view::look_to_mat4(Vec3::from_array(self.transform.position), Vec3::Z, Vec3::Y)
+        view::look_to_mat4(
+            self.transform.position,
+            self.transform.forward(),
+            self.transform.up(),
+        )
     }
 
     pub fn projection_matrix(&self, aspect_ratio: f32) -> Mat4 {
