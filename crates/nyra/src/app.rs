@@ -90,8 +90,8 @@ impl ApplicationHandler for App {
                 if let Some(update) = self.update.as_mut() {
                     update(&mut GameContext {
                         input: &self.input,
-                        delta_time: &dt,
                         camera: &mut self.camera,
+                        delta_time: dt,
                     });
                     self.input.clear_inputs();
                 }

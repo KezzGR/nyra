@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use glam::Vec3;
 use winit::{
     event::{ElementState, KeyEvent},
     keyboard::{KeyCode, PhysicalKey},
@@ -48,5 +49,24 @@ impl Input {
     pub fn clear_inputs(&mut self) {
         self.pressed_keys.clear();
         self.released_keys.clear();
+    }
+
+    pub fn wasd_direction_3d(&self) -> Vec3 {
+        let mut direction = Vec3::ZERO;
+
+        if self.key_down(KeyCode::KeyW) {
+            direction += Vec3::Z;
+        }
+        if self.key_down(KeyCode::KeyA) {
+            direction += Vec3::NEG_X;
+        }
+        if self.key_down(KeyCode::KeyS) {
+            direction += Vec3::NEG_Z;
+        }
+        if self.key_down(KeyCode::KeyD) {
+            direction += Vec3::X;
+        }
+
+        direction.normalize_or_zero()
     }
 }
