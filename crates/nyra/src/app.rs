@@ -10,7 +10,7 @@ use winit::{
 };
 
 use crate::{
-    GameContext, Input, Renderer,
+    GameContext, Input, Renderer, Time,
     render::{Camera, Transform},
 };
 
@@ -21,6 +21,7 @@ pub struct App {
     update: Option<Box<dyn FnMut(&mut GameContext)>>,
     input: Input,
     camera: Camera,
+    time: Time,
 }
 
 impl App {
@@ -63,10 +64,13 @@ impl ApplicationHandler for App {
 
         let camera = Camera::new(camera_transform, 70.0_f32.to_radians(), 0.01, 100.0);
 
+        let time = Time::default();
+
         self.window = Some(window);
         self.renderer = Some(renderer);
         self.input = input;
         self.camera = camera;
+        self.time = time;
     }
 
     fn window_event(
@@ -81,9 +85,12 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::RedrawRequested => {
+                let dt = self.time.delta_time();
+
                 if let Some(update) = self.update.as_mut() {
                     update(&mut GameContext {
                         input: &self.input,
+                        delta_time: &dt,
                         camera: &mut self.camera,
                     });
                     self.input.clear_inputs();
