@@ -25,6 +25,12 @@ impl Transform {
         }
     }
 
+    pub fn translate(&mut self, position: Vec3) {
+        self.position[0] += position.to_array()[0];
+        self.position[1] += position.to_array()[1];
+        self.position[2] += position.to_array()[2];
+    }
+
     pub fn rotate_from_axis_angle(&mut self, axis: Vec3, angle: f32) {
         self.rotation = Quat::from_axis_angle(axis.normalize(), angle).to_array();
     }

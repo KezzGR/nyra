@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use glam::Quat;
 use winit::{
     application::ApplicationHandler,
     error::EventLoopError,
@@ -8,14 +9,18 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::{GameContext, Input, Renderer};
+use crate::{
+    GameContext, Input, Renderer,
+    render::{Camera, Transform},
+};
 
 #[derive(Default)]
 pub struct App {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
-    input: Option<Input>,
-    update: Option<Box<dyn FnMut(&GameContext)>>,
+    update: Option<Box<dyn FnMut(&mut GameContext)>>,
+    input: Input,
+    camera: Camera,
 }
 
 impl App {
@@ -25,7 +30,7 @@ impl App {
 
     pub fn run<F>(mut self, update: F) -> Result<(), EventLoopError>
     where
-        F: FnMut(&GameContext) + 'static,
+        F: FnMut(&mut GameContext) + 'static,
     {
         self.update = Some(Box::new(update));
 
@@ -53,9 +58,15 @@ impl ApplicationHandler for App {
 
         let input = Input::default();
 
+        let camera_transform =
+            Transform::new([0.0, 0.0, -5.0], Quat::IDENTITY.to_array(), [1.0, 1.0, 1.0]);
+
+        let camera = Camera::new(camera_transform, 70.0_f32.to_radians(), 0.01, 100.0);
+
         self.window = Some(window);
         self.renderer = Some(renderer);
-        self.input = Some(input);
+        self.input = input;
+        self.camera = camera;
     }
 
     fn window_event(
@@ -71,13 +82,14 @@ impl ApplicationHandler for App {
 
             WindowEvent::RedrawRequested => {
                 if let Some(update) = self.update.as_mut() {
-                    if let Some(input) = self.input.as_mut() {
-                        update(&GameContext { input: input });
-                        input.clear_inputs();
-                    }
+                    update(&mut GameContext {
+                        input: &self.input,
+                        camera: &mut self.camera,
+                    });
+                    self.input.clear_inputs();
                 }
                 if let Some(renderer) = self.renderer.as_mut() {
-                    renderer.render();
+                    renderer.render(&self.camera);
                 }
                 if let Some(window) = self.window.as_mut() {
                     window.request_redraw();
@@ -91,9 +103,7 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::KeyboardInput { event, .. } => {
-                if let Some(input) = self.input.as_mut() {
-                    input.handle_keyboard_input(&event);
-                }
+                self.input.handle_keyboard_input(&event);
             }
 
             _ => {}

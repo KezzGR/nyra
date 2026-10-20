@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
-use glam::{Quat, Vec3};
+use glam::Vec3;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
@@ -214,7 +214,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, camera: &Camera) {
         let now = Instant::now();
         let delta_time = (now - self.last_frame).as_secs_f32();
         self.last_frame = now;
@@ -224,11 +224,6 @@ impl Renderer {
         let mut cube_transform = Transform::default();
 
         cube_transform.rotate_from_axis_angle(Vec3::ONE, self.angle);
-
-        let camera_transform =
-            Transform::new([0.0, 0.0, -5.0], Quat::IDENTITY.to_array(), [1.0, 1.0, 1.0]);
-
-        let camera = Camera::new(camera_transform, 70.0, 0.01, 100.0);
 
         let model = cube_transform.model_matrix();
         let view = camera.view_matrix();

@@ -12,6 +12,17 @@ pub struct Camera {
     far: f32,
 }
 
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            transform: Transform::default(),
+            vertical_fov: 70.0,
+            near: 0.01,
+            far: 100.0,
+        }
+    }
+}
+
 impl Camera {
     pub fn new(transform: Transform, vertical_fov: f32, near: f32, far: f32) -> Self {
         Self {
