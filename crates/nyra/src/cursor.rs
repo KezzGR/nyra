@@ -1,4 +1,7 @@
-use winit::window::{CursorGrabMode, Window};
+use winit::{
+    dpi::PhysicalPosition,
+    window::{CursorGrabMode, Window},
+};
 
 use crate::CursorState;
 
@@ -20,6 +23,12 @@ impl<'a> Cursor<'a> {
 
     pub fn set_locked(&mut self, locked: bool) {
         if locked {
+            let size = self.window.inner_size();
+
+            let center = PhysicalPosition::new(size.width / 2, size.height / 2);
+
+            self.window.set_cursor_position(center).unwrap();
+
             self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
         } else {
             self.window.set_cursor_grab(CursorGrabMode::None).unwrap();

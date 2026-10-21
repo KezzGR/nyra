@@ -11,7 +11,8 @@ use winit::{
 };
 
 use crate::{
-    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform, render::Camera, world::World,
+    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform, render::Camera,
+    world::World,
 };
 
 #[derive(Default)]
@@ -152,6 +153,12 @@ impl ApplicationHandler for App {
             } => {
                 if let Some(window) = self.window.as_mut() {
                     self.cursor_state.on_click(&window);
+                }
+            }
+
+            WindowEvent::Focused(false) => {
+                if let Some(window) = self.window.as_mut() {
+                    self.cursor_state.on_escape(&window);
                 }
             }
 
