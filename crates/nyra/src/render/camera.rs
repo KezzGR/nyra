@@ -3,7 +3,7 @@ use glam::{
     camera::lh::{proj, view},
 };
 
-use crate::render::Transform;
+use crate::Transform;
 
 pub struct Camera {
     pub transform: Transform,

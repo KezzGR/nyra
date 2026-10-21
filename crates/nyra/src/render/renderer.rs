@@ -1,21 +1,23 @@
 use std::sync::Arc;
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
-    BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompareFunction,
-    CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device, DeviceDescriptor,
-    ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat, Instance, Limits, LoadOp,
-    MemoryHints, MultisampleState, Operations, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, ShaderModuleDescriptor,
-    ShaderSource, ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration, Texture,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
-    TextureViewDescriptor, Trace, VertexState,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
+    BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
+    CompareFunction, CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device,
+    DeviceDescriptor, ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat,
+    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
+    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
+    ShaderModuleDescriptor, ShaderSource, ShaderStages, StencilState, StoreOp, Surface,
+    SurfaceConfiguration, Texture, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureView, TextureViewDescriptor, Trace, VertexState,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::render::{Camera, GpuMesh, Mesh, Transform, TransformUniform, Vertex};
+use crate::{
+    render::{Camera, GpuMesh, GpuThing, TransformUniform, Vertex},
+    world::World,
+};
 
 const CLEAR_COLOR: Color = Color {
     r: 0.015,
@@ -309,64 +311,5 @@ impl Renderer {
 
             self.gpu_meshes.push(gpu_mesh);
         }
-    }
-}
-
-pub struct GpuThing {
-    pub uniform_buffer: Buffer,
-    pub uniform_bind_group: BindGroup,
-}
-
-impl GpuThing {
-    pub fn new(device: &Device, layout: &BindGroupLayout) -> Self {
-        let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: Some("Uniform Buffer"),
-            size: size_of::<TransformUniform>() as BufferAddress,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Transform Bind Group"),
-            layout: layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
-        });
-
-        Self {
-            uniform_buffer,
-            uniform_bind_group,
-        }
-    }
-}
-
-pub struct Thing {
-    transform: Transform,
-    pub mesh_id: usize,
-}
-
-impl Thing {
-    pub fn new(transform: Transform, mesh_id: usize) -> Self {
-        Self { transform, mesh_id }
-    }
-}
-
-#[derive(Default)]
-pub struct World {
-    pub things: Vec<Thing>,
-    pub mesh_storage: Vec<Mesh>,
-}
-
-impl World {
-    pub fn spawn(&mut self, thing: Thing) {
-        self.things.push(thing);
-    }
-
-    pub fn add_mesh(&mut self, mesh: Mesh) -> usize {
-        self.mesh_storage.push(mesh);
-
-        self.mesh_storage.len() as usize - 1
     }
 }

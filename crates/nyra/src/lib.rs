@@ -7,6 +7,7 @@ mod input;
 mod mouse;
 mod render;
 mod time;
+mod world;
 
 pub use crate::app::App;
 pub use crate::controllers::FreeFlyController;
@@ -17,7 +18,7 @@ pub use crate::input::Input;
 pub use crate::mouse::Mouse;
 pub use crate::render::mesh::Mesh;
 pub use crate::render::renderer::Renderer;
-pub use crate::render::renderer::Thing;
-pub use crate::render::transform::Transform;
 pub use crate::time::Time;
+pub use crate::world::Thing;
+pub use crate::world::transform::Transform;
 pub use winit::error::EventLoopError as RunError;

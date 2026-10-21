@@ -1,6 +1,5 @@
 use crate::{
-    Cursor, Input, Mouse,
-    render::{Camera, World},
+    Cursor, Input, Mouse, render::Camera, world::World,
 };
 
 pub struct GameContext<'a> {

@@ -11,8 +11,7 @@ use winit::{
 };
 
 use crate::{
-    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time,
-    render::{Camera, Transform, World},
+    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform, render::Camera, world::World,
 };
 
 #[derive(Default)]
