@@ -2,15 +2,11 @@ use std::sync::Arc;
 
 use glam::{Quat, Vec2, Vec3};
 use winit::{
-    application::ApplicationHandler,
-    error::EventLoopError,
-    event::{DeviceEvent, WindowEvent},
-    event_loop::{ActiveEventLoop, EventLoop},
-    window::{Window, WindowAttributes, WindowId},
+    application::ApplicationHandler, error::EventLoopError, event::{DeviceEvent, ElementState, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::KeyCode, window::{Window, WindowAttributes, WindowId},
 };
 
 use crate::{
-    GameContext, Input, Mouse, Renderer, Time,
+    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time,
     render::{Camera, Transform},
 };
 
@@ -18,16 +14,26 @@ use crate::{
 pub struct App {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
+    setup: Option<Box<dyn FnOnce(&mut GameContext)>>,
     update: Option<Box<dyn FnMut(&mut GameContext)>>,
     input: Input,
     mouse: Mouse,
     camera: Camera,
     time: Time,
+    cursor_state: CursorState,
 }
 
 impl App {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn setup<F>(mut self, setup: F) -> Self
+    where
+        F: FnOnce(&mut GameContext) + 'static,
+    {
+        self.setup = Some(Box::new(setup));
+        self
     }
 
     pub fn run<F>(mut self, update: F) -> Result<(), EventLoopError>
@@ -58,22 +64,23 @@ impl ApplicationHandler for App {
 
         let renderer = pollster::block_on(Renderer::new(window.clone()));
 
-        let input = Input::default();
-
-        let mouse = Mouse::default();
-
         let camera_transform = Transform::new(Vec3::new(0.0, 0.0, -5.0), Quat::IDENTITY, Vec3::ONE);
 
         let camera = Camera::new(camera_transform, 70.0_f32.to_radians(), 0.01, 100.0);
 
-        let time = Time::default();
-
         self.window = Some(window);
         self.renderer = Some(renderer);
-        self.input = input;
-        self.mouse = mouse;
         self.camera = camera;
-        self.time = time;
+
+        if let (Some(setup), Some(window)) = (self.setup.take(), self.window.as_ref()) {
+            setup(&mut GameContext {
+                input: &self.input,
+                mouse: &self.mouse,
+                camera: &mut self.camera,
+                cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
+                delta_time: 0.0,
+            });
+        }
     }
 
     fn window_event(
@@ -90,19 +97,22 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let dt = self.time.delta_time();
 
-                if let Some(update) = self.update.as_mut() {
+                if let (Some(update), Some(window)) = (self.update.as_mut(), self.window.as_ref()) {
                     update(&mut GameContext {
                         input: &self.input,
                         mouse: &self.mouse,
                         camera: &mut self.camera,
+                        cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                         delta_time: dt,
                     });
-                    self.input.clear_inputs();
-                    self.mouse.end_frame();
                 }
+                self.input.clear_inputs();
+                self.mouse.end_frame();
+
                 if let Some(renderer) = self.renderer.as_mut() {
                     renderer.render(&self.camera);
                 }
+
                 if let Some(window) = self.window.as_mut() {
                     window.request_redraw();
                 }
@@ -116,6 +126,18 @@ impl ApplicationHandler for App {
 
             WindowEvent::KeyboardInput { event, .. } => {
                 self.input.handle_keyboard_input(&event);
+
+                if self.input.key_just_pressed(KeyCode::Escape) {
+                    if let Some(window) = self.window.as_mut() {
+                        self.cursor_state.on_escape(&window);
+                    }
+                }
+            }
+
+            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
+                if let Some(window) = self.window.as_mut() {
+                    self.cursor_state.on_click(&window);
+                }
             }
 
             _ => {}

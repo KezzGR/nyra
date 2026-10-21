@@ -4,7 +4,12 @@ use winit::error::EventLoopError;
 fn main() -> Result<(), EventLoopError> {
     let mut controller = FreeFlyController::default();
 
-    App::new().run(move |game| {
-        controller.update(game);
-    })
+    App::new()
+        .setup(|game| {
+            game.cursor.set_locked(true);
+            game.cursor.set_visible(false);
+        })
+        .run(move |game| {
+            controller.update(game);
+        })
 }
