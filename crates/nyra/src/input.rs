@@ -46,8 +46,14 @@ impl Input {
         self.released_keys.contains(&key)
     }
 
+    pub fn end_frame(&mut self) {
+        self.pressed_keys.clear();
+        self.released_keys.clear();
+    }
+
     pub fn clear_inputs(&mut self) {
         self.pressed_keys.clear();
+        self.holding_keys.clear();
         self.released_keys.clear();
     }
 

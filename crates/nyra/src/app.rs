@@ -118,7 +118,7 @@ impl ApplicationHandler for App {
                         delta_time: dt,
                     });
                 }
-                self.input.clear_inputs();
+                self.input.end_frame();
                 self.mouse.end_frame();
 
                 if let Some(renderer) = self.renderer.as_mut() {
@@ -160,6 +160,9 @@ impl ApplicationHandler for App {
                 if let Some(window) = self.window.as_mut() {
                     self.cursor_state.on_escape(&window);
                 }
+
+                self.input.clear_inputs();
+                self.mouse.end_frame();
             }
 
             _ => {}
@@ -174,8 +177,12 @@ impl ApplicationHandler for App {
     ) {
         match event {
             DeviceEvent::MouseMotion { delta, .. } => {
-                self.mouse
-                    .save_delta(Vec2::new(delta.0 as f32, delta.1 as f32));
+                if let Some(window) = self.window.as_ref() {
+                    if window.has_focus() {
+                        self.mouse
+                            .save_delta(Vec2::new(delta.0 as f32, delta.1 as f32));
+                    }
+                }
             }
 
             _ => {}
