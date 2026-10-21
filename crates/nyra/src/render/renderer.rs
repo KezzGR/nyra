@@ -1,8 +1,6 @@
-use std::{sync::Arc, time::Instant};
-
-use glam::{Quat, Vec3};
+use std::sync::Arc;
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
     BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompareFunction,
     CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device, DeviceDescriptor,
@@ -14,13 +12,10 @@ use wgpu::{
     ShaderSource, ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration, Texture,
     TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
     TextureViewDescriptor, Trace, VertexState,
-    util::{BufferInitDescriptor, DeviceExt},
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::render::{Camera, Mesh, Transform, TransformUniform, Vertex};
-
-const ROTATION_SPEED: f32 = 2.0;
+use crate::render::{Camera, GpuMesh, Mesh, Transform, TransformUniform, Vertex};
 
 const CLEAR_COLOR: Color = Color {
     r: 0.015,
@@ -35,19 +30,11 @@ pub struct Renderer {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
     depth_texture: Texture,
     depth_view: TextureView,
-    first_uniform_buffer: Buffer,
-    second_uniform_buffer: Buffer,
-    third_uniform_buffer: Buffer,
-    first_uniform_bind_group: BindGroup,
-    second_uniform_bind_group: BindGroup,
-    third_uniform_bind_group: BindGroup,
+    uniform_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
-    last_frame: Instant,
-    angle: f32,
+    gpu_meshes: Vec<GpuMesh>,
 }
 
 impl Renderer {
@@ -88,41 +75,6 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
-        let cube = Mesh::cube();
-
-        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&cube.vertices),
-            usage: BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&cube.indices),
-            usage: BufferUsages::INDEX,
-        });
-
-        let first_uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: Some("Transform Buffer"),
-            size: size_of::<TransformUniform>() as BufferAddress,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let second_uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: Some("Transform Buffer"),
-            size: size_of::<TransformUniform>() as BufferAddress,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let third_uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: Some("Transform Buffer"),
-            size: size_of::<TransformUniform>() as BufferAddress,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
         let depth_texture = device.create_texture(&TextureDescriptor {
             label: Some("Depth Texture"),
             size: Extent3d {
@@ -154,33 +106,6 @@ impl Renderer {
                     count: None,
                 }],
             });
-
-        let first_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Transform Bind Group"),
-            layout: &uniform_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: first_uniform_buffer.as_entire_binding(),
-            }],
-        });
-
-        let second_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Transform Bind Group"),
-            layout: &uniform_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: second_uniform_buffer.as_entire_binding(),
-            }],
-        });
-
-        let third_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Transform Bind Group"),
-            layout: &uniform_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: third_uniform_buffer.as_entire_binding(),
-            }],
-        });
 
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Triangle Shader"),
@@ -228,57 +153,21 @@ impl Renderer {
             cache: None,
         });
 
-        let last_frame = Instant::now();
-
         Self {
             window,
             surface,
             device,
             queue,
             config,
-            vertex_buffer,
-            index_buffer,
-            first_uniform_buffer,
-            second_uniform_buffer,
-            third_uniform_buffer,
             depth_texture,
             depth_view,
-            first_uniform_bind_group,
-            second_uniform_bind_group,
-            third_uniform_bind_group,
+            uniform_bind_group_layout,
             pipeline,
-            last_frame,
-            angle: 0.0,
+            gpu_meshes: Vec::default(),
         }
     }
 
-    pub fn render(&mut self, camera: &Camera) {
-        let now = Instant::now();
-        let delta_time = (now - self.last_frame).as_secs_f32();
-        self.last_frame = now;
-
-        self.angle += delta_time * ROTATION_SPEED;
-
-        let mut center_cube_transform = Transform::default();
-        let mut left_cube_transform =
-            Transform::new(Vec3::new(-5.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
-        let mut right_cube_transform =
-            Transform::new(Vec3::new(5.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
-
-        center_cube_transform.rotate_from_axis_angle(Vec3::ONE, self.angle);
-        left_cube_transform.rotate_from_axis_angle(Vec3::NEG_ONE, self.angle);
-        right_cube_transform.rotate_from_axis_angle(Vec3::Y, self.angle);
-
-        let center_cube_model = center_cube_transform.model_matrix();
-        let left_cube_model = left_cube_transform.model_matrix();
-        let right_cube_model = right_cube_transform.model_matrix();
-
-        let view = camera.view_matrix();
-        let projection =
-            camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
-
-        let projection_view = projection * view;
-
+    pub fn render(&mut self, camera: &Camera, world: &World) {
         let mut needs_reconfigure = false;
 
         let frame = match self.surface.get_current_texture() {
@@ -336,44 +225,34 @@ impl Renderer {
                 ..Default::default()
             });
 
+            let view = camera.view_matrix();
+            let projection =
+                camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
+
+            let projection_view = projection * view;
+
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
 
-            render_pass.set_bind_group(0, Some(&self.first_uniform_bind_group), &[]);
-            render_pass.draw_indexed(0..36, 0, 0..1);
+            for thing in &world.things {
+                let gpu_thing = GpuThing::new(&self.device, &self.uniform_bind_group_layout);
+                let gpu_mesh = &self.gpu_meshes[thing.mesh_id];
 
-            render_pass.set_bind_group(0, Some(&self.second_uniform_bind_group), &[]);
-            render_pass.draw_indexed(0..36, 0, 0..1);
+                self.queue.write_buffer(
+                    &gpu_thing.uniform_buffer,
+                    0,
+                    bytemuck::bytes_of(&TransformUniform::new(
+                        thing.transform.model_matrix().to_cols_array_2d(),
+                        projection_view.to_cols_array_2d(),
+                    )),
+                );
 
-            render_pass.set_bind_group(0, Some(&self.third_uniform_bind_group), &[]);
-            render_pass.draw_indexed(0..36, 0, 0..1);
+                render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
+
+                render_pass.set_bind_group(0, Some(&gpu_thing.uniform_bind_group), &[]);
+                render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
+            }
         }
-
-        self.queue.write_buffer(
-            &self.first_uniform_buffer,
-            0,
-            bytemuck::bytes_of(&TransformUniform::new(
-                center_cube_model.to_cols_array_2d(),
-                projection_view.to_cols_array_2d(),
-            )),
-        );
-        self.queue.write_buffer(
-            &self.second_uniform_buffer,
-            0,
-            bytemuck::bytes_of(&TransformUniform::new(
-                left_cube_model.to_cols_array_2d(),
-                projection_view.to_cols_array_2d(),
-            )),
-        );
-        self.queue.write_buffer(
-            &self.third_uniform_buffer,
-            0,
-            bytemuck::bytes_of(&TransformUniform::new(
-                right_cube_model.to_cols_array_2d(),
-                projection_view.to_cols_array_2d(),
-            )),
-        );
 
         self.queue.submit([encoder.finish()]);
 
@@ -418,5 +297,76 @@ impl Renderer {
     fn reconfigure_surface(&self) {
         self.surface.configure(&self.device, &self.config);
         self.window.request_redraw();
+    }
+
+    pub fn fill_gpu_meshes(&mut self, world: &World) {
+        for thing in &world.things {
+            if self.gpu_meshes.get(thing.mesh_id).is_some() {
+                continue;
+            }
+
+            let gpu_mesh = GpuMesh::new(&world.mesh_storage[thing.mesh_id], &self.device);
+
+            self.gpu_meshes.push(gpu_mesh);
+        }
+    }
+}
+
+pub struct GpuThing {
+    pub uniform_buffer: Buffer,
+    pub uniform_bind_group: BindGroup,
+}
+
+impl GpuThing {
+    pub fn new(device: &Device, layout: &BindGroupLayout) -> Self {
+        let uniform_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Uniform Buffer"),
+            size: size_of::<TransformUniform>() as BufferAddress,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Transform Bind Group"),
+            layout: layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        Self {
+            uniform_buffer,
+            uniform_bind_group,
+        }
+    }
+}
+
+pub struct Thing {
+    transform: Transform,
+    pub mesh_id: usize,
+}
+
+impl Thing {
+    pub fn new(transform: Transform, mesh_id: usize) -> Self {
+        Self { transform, mesh_id }
+    }
+}
+
+#[derive(Default)]
+pub struct World {
+    pub things: Vec<Thing>,
+    pub mesh_storage: Vec<Mesh>,
+}
+
+impl World {
+    pub fn spawn(&mut self, thing: Thing) {
+        self.things.push(thing);
+    }
+
+    pub fn add_mesh(&mut self, mesh: Mesh) -> usize {
+        self.mesh_storage.push(mesh);
+
+        self.mesh_storage.len() as usize - 1
     }
 }

@@ -12,7 +12,7 @@ use winit::{
 
 use crate::{
     Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time,
-    render::{Camera, Transform},
+    render::{Camera, Transform, World},
 };
 
 #[derive(Default)]
@@ -26,6 +26,7 @@ pub struct App {
     camera: Camera,
     time: Time,
     cursor_state: CursorState,
+    world: World,
 }
 
 impl App {
@@ -82,9 +83,14 @@ impl ApplicationHandler for App {
                 input: &self.input,
                 mouse: &self.mouse,
                 camera: &mut self.camera,
+                world: &mut self.world,
                 cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                 delta_time: 0.0,
             });
+        }
+
+        if let Some(renderer) = self.renderer.as_mut() {
+            renderer.fill_gpu_meshes(&self.world);
         }
     }
 
@@ -107,6 +113,7 @@ impl ApplicationHandler for App {
                         input: &self.input,
                         mouse: &self.mouse,
                         camera: &mut self.camera,
+                        world: &mut self.world,
                         cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                         delta_time: dt,
                     });
@@ -115,7 +122,7 @@ impl ApplicationHandler for App {
                 self.mouse.end_frame();
 
                 if let Some(renderer) = self.renderer.as_mut() {
-                    renderer.render(&self.camera);
+                    renderer.render(&self.camera, &self.world);
                 }
 
                 if let Some(window) = self.window.as_mut() {
