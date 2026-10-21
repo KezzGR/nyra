@@ -23,9 +23,9 @@ use crate::render::{Camera, Mesh, Transform, TransformUniform, Vertex};
 const ROTATION_SPEED: f32 = 2.0;
 
 const CLEAR_COLOR: Color = Color {
-    r: 0.05,
-    g: 0.05,
-    b: 0.15,
+    r: 0.015,
+    g: 0.019,
+    b: 0.035,
     a: 1.0,
 };
 
