@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
-use glam::Vec3;
+use glam::{Quat, Vec3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferAddress, BufferBindingType, BufferDescriptor,
@@ -37,11 +37,14 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
-    index_count: u32,
     depth_texture: Texture,
     depth_view: TextureView,
-    transform_buffer: Buffer,
-    transform_bind_group: BindGroup,
+    first_uniform_buffer: Buffer,
+    second_uniform_buffer: Buffer,
+    third_uniform_buffer: Buffer,
+    first_uniform_bind_group: BindGroup,
+    second_uniform_bind_group: BindGroup,
+    third_uniform_bind_group: BindGroup,
     pipeline: RenderPipeline,
     last_frame: Instant,
     angle: f32,
@@ -99,7 +102,21 @@ impl Renderer {
             usage: BufferUsages::INDEX,
         });
 
-        let transform_buffer = device.create_buffer(&BufferDescriptor {
+        let first_uniform_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Transform Buffer"),
+            size: size_of::<TransformUniform>() as BufferAddress,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let second_uniform_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Transform Buffer"),
+            size: size_of::<TransformUniform>() as BufferAddress,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let third_uniform_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Transform Buffer"),
             size: size_of::<TransformUniform>() as BufferAddress,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -123,7 +140,7 @@ impl Renderer {
 
         let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
-        let transform_bind_group_layout =
+        let uniform_bind_group_layout =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: Some("Transform Bind Group Layout"),
                 entries: &[BindGroupLayoutEntry {
@@ -138,12 +155,30 @@ impl Renderer {
                 }],
             });
 
-        let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+        let first_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("Transform Bind Group"),
-            layout: &transform_bind_group_layout,
+            layout: &uniform_bind_group_layout,
             entries: &[BindGroupEntry {
                 binding: 0,
-                resource: transform_buffer.as_entire_binding(),
+                resource: first_uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        let second_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Transform Bind Group"),
+            layout: &uniform_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: second_uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        let third_uniform_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Transform Bind Group"),
+            layout: &uniform_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: third_uniform_buffer.as_entire_binding(),
             }],
         });
 
@@ -154,7 +189,7 @@ impl Renderer {
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Triangle Pipeline Layout"),
-            bind_group_layouts: &[Some(&transform_bind_group_layout)],
+            bind_group_layouts: &[Some(&uniform_bind_group_layout)],
             immediate_size: 0,
         });
 
@@ -203,11 +238,14 @@ impl Renderer {
             config,
             vertex_buffer,
             index_buffer,
-            index_count: cube.indices.len() as u32,
-            transform_buffer,
+            first_uniform_buffer,
+            second_uniform_buffer,
+            third_uniform_buffer,
             depth_texture,
             depth_view,
-            transform_bind_group,
+            first_uniform_bind_group,
+            second_uniform_bind_group,
+            third_uniform_bind_group,
             pipeline,
             last_frame,
             angle: 0.0,
@@ -221,11 +259,20 @@ impl Renderer {
 
         self.angle += delta_time * ROTATION_SPEED;
 
-        let mut cube_transform = Transform::default();
+        let mut center_cube_transform = Transform::default();
+        let mut left_cube_transform =
+            Transform::new(Vec3::new(-5.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        let mut right_cube_transform =
+            Transform::new(Vec3::new(5.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
 
-        cube_transform.rotate_from_axis_angle(Vec3::ONE, self.angle);
+        center_cube_transform.rotate_from_axis_angle(Vec3::ONE, self.angle);
+        left_cube_transform.rotate_from_axis_angle(Vec3::NEG_ONE, self.angle);
+        right_cube_transform.rotate_from_axis_angle(Vec3::Y, self.angle);
 
-        let model = cube_transform.model_matrix();
+        let center_cube_model = center_cube_transform.model_matrix();
+        let left_cube_model = left_cube_transform.model_matrix();
+        let right_cube_model = right_cube_transform.model_matrix();
+
         let view = camera.view_matrix();
         let projection =
             camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
@@ -290,20 +337,44 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-            render_pass.set_bind_group(0, Some(&self.transform_bind_group), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+
+            render_pass.set_bind_group(0, Some(&self.first_uniform_bind_group), &[]);
+            render_pass.draw_indexed(0..36, 0, 0..1);
+
+            render_pass.set_bind_group(0, Some(&self.second_uniform_bind_group), &[]);
+            render_pass.draw_indexed(0..36, 0, 0..1);
+
+            render_pass.set_bind_group(0, Some(&self.third_uniform_bind_group), &[]);
+            render_pass.draw_indexed(0..36, 0, 0..1);
         }
 
         self.queue.write_buffer(
-            &self.transform_buffer,
+            &self.first_uniform_buffer,
             0,
             bytemuck::bytes_of(&TransformUniform::new(
-                model.to_cols_array_2d(),
+                center_cube_model.to_cols_array_2d(),
                 projection_view.to_cols_array_2d(),
             )),
         );
+        self.queue.write_buffer(
+            &self.second_uniform_buffer,
+            0,
+            bytemuck::bytes_of(&TransformUniform::new(
+                left_cube_model.to_cols_array_2d(),
+                projection_view.to_cols_array_2d(),
+            )),
+        );
+        self.queue.write_buffer(
+            &self.third_uniform_buffer,
+            0,
+            bytemuck::bytes_of(&TransformUniform::new(
+                right_cube_model.to_cols_array_2d(),
+                projection_view.to_cols_array_2d(),
+            )),
+        );
+
         self.queue.submit([encoder.finish()]);
 
         self.window.pre_present_notify();

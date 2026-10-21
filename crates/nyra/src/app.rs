@@ -2,7 +2,12 @@ use std::sync::Arc;
 
 use glam::{Quat, Vec2, Vec3};
 use winit::{
-    application::ApplicationHandler, error::EventLoopError, event::{DeviceEvent, ElementState, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::KeyCode, window::{Window, WindowAttributes, WindowId},
+    application::ApplicationHandler,
+    error::EventLoopError,
+    event::{DeviceEvent, ElementState, MouseButton, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
+    keyboard::KeyCode,
+    window::{Window, WindowAttributes, WindowId},
 };
 
 use crate::{
@@ -134,7 +139,11 @@ impl ApplicationHandler for App {
                 }
             }
 
-            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
+            WindowEvent::MouseInput {
+                state: ElementState::Pressed,
+                button: MouseButton::Left,
+                ..
+            } => {
                 if let Some(window) = self.window.as_mut() {
                     self.cursor_state.on_click(&window);
                 }
