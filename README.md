@@ -10,6 +10,8 @@ Right now, Nyra renders a spinning cube that you can freely fly around.
 
 Yes, a cube. We're getting there.
 
+![Nyra free-fly camera demo](assets/nyra-demo.gif)
+
 ## Getting Started
 
 Clone the repository and run the camera example:
