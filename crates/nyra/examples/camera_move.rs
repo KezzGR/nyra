@@ -1,7 +1,6 @@
-use nyra::{App, FreeFlyController};
-use winit::error::EventLoopError;
+use nyra::{App, FreeFlyController, RunError};
 
-fn main() -> Result<(), EventLoopError> {
+fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
 
     App::new()

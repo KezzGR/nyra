@@ -17,3 +17,4 @@ pub use crate::input::Input;
 pub use crate::mouse::Mouse;
 pub use crate::render::renderer::Renderer;
 pub use crate::time::Time;
+pub use winit::error::EventLoopError as RunError;
