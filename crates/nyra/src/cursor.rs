@@ -37,4 +37,8 @@ impl<'a> Cursor<'a> {
         self.state.locked = locked;
         self.state.recapture_on_click = locked;
     }
+
+    pub fn has_focus(&self) -> bool {
+        self.window.has_focus()
+    }
 }
