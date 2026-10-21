@@ -3,25 +3,48 @@ use glam::Quat;
 use crate::GameContext;
 
 pub struct FreeFlyController {
-    sensitivity: f32,
     move_speed: f32,
+    sensitivity: f32,
     yaw: f32,
     pitch: f32,
+
+    first: bool,
 }
 
 impl Default for FreeFlyController {
     fn default() -> Self {
         Self {
-            sensitivity: 0.003,
             move_speed: 4.0,
+            sensitivity: 0.003,
             yaw: 0.0,
             pitch: 0.0,
+            first: true,
         }
     }
 }
 
 impl FreeFlyController {
+    pub fn new(move_speed: f32, sensitivity: f32) -> Self {
+        Self {
+            move_speed,
+            sensitivity,
+            yaw: 0.0,
+            pitch: 0.0,
+            first: true,
+        }
+    }
+
+    pub fn setup(&mut self, game: &mut GameContext<'_>) {
+        game.cursor.set_locked(true);
+        game.cursor.set_visible(false);
+    }
+
     pub fn update(&mut self, game: &mut GameContext<'_>) {
+        if self.first {
+            self.setup(game);
+            self.first = false;
+        }
+
         self.yaw += game.mouse.delta.x * self.sensitivity;
         self.pitch -= game.mouse.delta.y * self.sensitivity;
 

@@ -6,9 +6,6 @@ fn main() -> Result<(), RunError> {
 
     App::new()
         .setup(|game| {
-            game.cursor.set_locked(true);
-            game.cursor.set_visible(false);
-
             let mesh_id = game.world.add_mesh(Mesh::cube());
 
             let left_cube_transform = Transform::new(Vec3::X * -3.0, Quat::IDENTITY, Vec3::ONE);
