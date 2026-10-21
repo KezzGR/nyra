@@ -1,117 +1,124 @@
-# Nyra
+# Nyra 🦀
 
-A lightweight 3D engine in Rust for anime-style games.
+I'm building my own 3D game engine in Rust.
 
-Nyra is in early development. It currently renders a procedurally generated spinning cube with perspective projection, basic Lambert lighting, and a depth buffer. The camera supports free-fly movement with keyboard and mouse controls.
+Why? Mostly because I wanted to understand how game engines actually work instead of just using one.
 
-## Why
+So I started writing my own renderer, input system, camera, and everything else, one piece at a time.
 
-Nyra aims to bring anime-style character rendering tools together in a lightweight engine: toon shading, VRM, morph targets, and lip-sync.
+Right now, Nyra renders a spinning cube that you can freely fly around.
 
-These are long-term goals, not implemented features.
+Yes, a cube. We're getting there.
 
-## Goals
+## Getting Started
 
-- Built-in toon shading, VRM, morph targets, and lip-sync.
-- Text-based scene format, mergeable in git.
-- Lightweight editor that runs on weak hardware.
-- Simple, flexible API with room for low-level experimentation.
+Clone the repository and run the camera example:
 
-## Current Features
-
-### App and Input
-
-- Window creation and resize handling via `winit`.
-- User-defined per-frame update callback via `App::new().run(|game| { ... })`.
-- Access to keyboard input, mouse movement, camera, and delta time through `GameContext`.
-- Keyboard state queries:
-  - `key_down(key)`: true while a key is held.
-  - `key_just_pressed(key)`: true for the update following a new press.
-  - `key_just_released(key)`: true for the update following a release.
-- Repeated key events do not count as additional presses.
-- Normalized WASD movement direction.
-- Relative mouse motion with per-frame delta accumulation.
-- Delta time for frame-rate-independent movement.
-
-### Rendering and Math
-
-- Procedural cube and cuboid generation with configurable dimensions.
-- Indexed cube geometry: 24 vertices with face normals, 36 indices.
-- Custom `Vec3` type in `nyra_math`, used for procedural mesh generation.
-- Position, quaternion rotation, and scale transforms.
-- World-space and local-space translation.
-- Movable perspective camera with quaternion-based orientation.
-- Built-in `FreeFlyController` for keyboard and mouse camera movement.
-- Model and projection-view matrices passed through a uniform buffer.
-- Directional Lambert lighting in WGSL.
-- Depth testing and depth writes using a `Depth32Float` buffer.
-- Depth buffer recreated when the window is resized.
-
-## Example: Free-Fly Camera
-
-Move through 3D space with WASD and look around using the mouse.
-
-```rust
-use nyra::{App, FreeFlyController};
-use winit::error::EventLoopError;
-
-fn main() -> Result<(), EventLoopError> {
-    let mut controller = FreeFlyController::default();
-
-    App::new().run(move |game| {
-        controller.update(game);
-    })
-}
-```
-
-Run the example:
-
-```sh
+```bash
+git clone https://github.com/KezzGR/nyra.git
+cd nyra
 cargo run -p nyra --example camera_move
 ```
 
-The `FreeFlyController` handles camera movement and rotation. Camera transforms can also be controlled directly for custom behavior.
+**Controls:**
 
-## Example: Keyboard Input
+- **WASD**: Move around
+- **Mouse**: Look around
+- **Escape**: Release the cursor
+- **Left click**: Capture it again
+
+## What Works So Far
+
+### Rendering
+
+- 3D rendering with `wgpu`
+- Procedural cube and cuboid generation
+- Indexed meshes with face normals
+- Perspective projection
+- Basic Lambert lighting
+- Depth buffering
+- Window resizing
+
+### Camera & Input
+
+- Free-fly camera with keyboard and mouse controls
+- Quaternion-based camera rotation
+- World-space and local-space movement
+- Keyboard input with pressed, held, and released states
+- Mouse movement tracking
+- Delta time for frame-independent movement
+- Cursor locking and visibility controls
+
+### Application
+
+Nyra handles the window, event loop, and rendering internally.
+
+There's also a small API for running your own code without having to deal with `winit` directly.
+
+## The API
+
+Here's the current free-fly camera example:
 
 ```rust
-use nyra::App;
-use winit::{error::EventLoopError, keyboard::KeyCode};
+use nyra::{App, FreeFlyController, RunError};
 
-fn main() -> Result<(), EventLoopError> {
-    App::new().run(|game| {
-        if game.input.key_just_pressed(KeyCode::Space) {
-            println!("Hello from Nyra!");
-        }
+fn main() -> Result<(), RunError> {
+    let mut controller = FreeFlyController::default();
 
-        if game.input.key_down(KeyCode::KeyW) {
-            // W is being held.
-        }
-
-        if game.input.key_just_released(KeyCode::KeyW) {
-            println!("W released!");
-        }
-    })
+    App::new()
+        .setup(|game| {
+            game.cursor.set_locked(true);
+            game.cursor.set_visible(false);
+        })
+        .run(move |game| {
+            controller.update(game);
+        })
 }
 ```
 
-The closure is called during the application's frame updates. Nyra handles the `winit` event loop and tracks keyboard state internally.
+`setup()` runs once, after the window and renderer are initialized.
 
-To try the existing example:
+`run()` takes a callback that gets executed every frame.
 
-```sh
-cargo run -p nyra --example input_test
+Both use `GameContext`, which gives access to the camera, keyboard, mouse, cursor, and delta time.
+
+I want the API to stay simple. If I want to hide the cursor, I should be able to write:
+
+```rust
+game.cursor.set_visible(false);
 ```
 
-## Stack
+And that's it.
 
-- Rust (edition 2024)
-- `wgpu` - rendering
-- `winit` - window and input
-- `bytemuck` - CPU/GPU data transfer
-- `pollster` - sync/async bridge
-- `glam` - transform and camera math
-- `nyra_math` - custom vector math for procedural mesh generation
+## Project Structure
+
+Nyra currently consists of two Rust crates:
+
+- **`nyra`**: Rendering, application lifecycle, camera, input, and other engine systems.
+- **`nyra_math`**: My own little math experiments, currently including a custom `Vec3` implementation.
+
+The engine also uses `glam` for camera and transform math.
+
+## Current State
+
+This is still a very early project.
+
+There's no proper scene system yet. No asset loading, no materials, and no API for spawning arbitrary objects.
+
+The renderer currently draws one built-in rotating cube.
+
+I'm learning Rust and graphics programming while building this, so expect the code and API to change quite a bit.
+
+For now, I'm just building things, breaking things, figuring out why they broke, and moving on to the next piece.
+
+## Built With
+
+- Rust
+- `wgpu`
+- `winit`
+- `glam`
+- `bytemuck`
+- `pollster`
 
 ## License
 
