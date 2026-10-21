@@ -44,15 +44,17 @@ impl FreeFlyController {
             self.initialized = true;
         }
 
-        self.yaw += game.mouse.delta.x * self.sensitivity;
-        self.pitch -= game.mouse.delta.y * self.sensitivity;
+        if game.cursor.is_locked() {
+            self.yaw += game.mouse.delta.x * self.sensitivity;
+            self.pitch -= game.mouse.delta.y * self.sensitivity;
 
-        self.pitch = self
-            .pitch
-            .clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
+            self.pitch = self
+                .pitch
+                .clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
 
-        game.camera.transform.rotation =
-            Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch);
+            game.camera.transform.rotation =
+                Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch);
+        }
 
         game.camera
             .transform

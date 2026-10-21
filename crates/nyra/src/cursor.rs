@@ -41,4 +41,8 @@ impl<'a> Cursor<'a> {
     pub fn has_focus(&self) -> bool {
         self.window.has_focus()
     }
+
+    pub fn is_locked(&self) -> bool {
+        self.state.locked
+    }
 }
