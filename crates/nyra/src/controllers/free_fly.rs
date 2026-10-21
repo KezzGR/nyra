@@ -8,7 +8,7 @@ pub struct FreeFlyController {
     yaw: f32,
     pitch: f32,
 
-    first: bool,
+    initialized: bool,
 }
 
 impl Default for FreeFlyController {
@@ -18,7 +18,7 @@ impl Default for FreeFlyController {
             sensitivity: 0.003,
             yaw: 0.0,
             pitch: 0.0,
-            first: true,
+            initialized: true,
         }
     }
 }
@@ -30,19 +30,14 @@ impl FreeFlyController {
             sensitivity,
             yaw: 0.0,
             pitch: 0.0,
-            first: true,
+            initialized: true,
         }
     }
 
-    pub fn setup(&mut self, game: &mut GameContext<'_>) {
-        game.cursor.set_locked(true);
-        game.cursor.set_visible(false);
-    }
-
     pub fn update(&mut self, game: &mut GameContext<'_>) {
-        if self.first {
+        if self.initialized {
             self.setup(game);
-            self.first = false;
+            self.initialized = false;
         }
 
         self.yaw += game.mouse.delta.x * self.sensitivity;
@@ -58,5 +53,10 @@ impl FreeFlyController {
         game.camera
             .transform
             .translate_local(game.input.wasd_direction_3d() * game.delta_time * self.move_speed);
+    }
+
+    fn setup(&mut self, game: &mut GameContext<'_>) {
+        game.cursor.set_locked(true);
+        game.cursor.set_visible(false);
     }
 }
