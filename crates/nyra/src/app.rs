@@ -15,12 +15,12 @@ use crate::{
     world::World,
 };
 
-#[derive(Default)]
-pub struct App {
+pub struct App<S> {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
-    setup: Option<Box<dyn FnOnce(&mut GameContext)>>,
-    update: Option<Box<dyn FnMut(&mut GameContext)>>,
+    setup: Option<Box<dyn FnOnce(&mut GameContext) -> S>>,
+    update: Option<Box<dyn FnMut(&mut GameContext, &mut S)>>,
+    state: Option<S>,
     input: Input,
     mouse: Mouse,
     camera: Camera,
@@ -29,14 +29,14 @@ pub struct App {
     world: World,
 }
 
-impl App {
+impl<S> App<S> {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn setup<F>(mut self, setup: F) -> Self
     where
-        F: FnOnce(&mut GameContext) + 'static,
+        F: FnOnce(&mut GameContext) -> S + 'static,
     {
         self.setup = Some(Box::new(setup));
         self
@@ -44,7 +44,8 @@ impl App {
 
     pub fn run<F>(mut self, update: F) -> Result<(), EventLoopError>
     where
-        F: FnMut(&mut GameContext) + 'static,
+        F: FnMut(&mut GameContext, &mut S) + 'static,
+        S: 'static,
     {
         self.update = Some(Box::new(update));
 
@@ -54,7 +55,25 @@ impl App {
     }
 }
 
-impl ApplicationHandler for App {
+impl<S> Default for App<S> {
+    fn default() -> Self {
+        Self {
+            window: Default::default(),
+            renderer: Default::default(),
+            setup: Default::default(),
+            update: Default::default(),
+            state: Default::default(),
+            input: Default::default(),
+            mouse: Default::default(),
+            camera: Default::default(),
+            time: Default::default(),
+            cursor_state: Default::default(),
+            world: Default::default(),
+        }
+    }
+}
+
+impl<S> ApplicationHandler for App<S> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
             return;
@@ -79,14 +98,14 @@ impl ApplicationHandler for App {
         self.camera = camera;
 
         if let (Some(setup), Some(window)) = (self.setup.take(), self.window.as_ref()) {
-            setup(&mut GameContext {
+            self.state = Some(setup(&mut GameContext {
                 input: &self.input,
                 mouse: &self.mouse,
                 camera: &mut self.camera,
                 world: &mut self.world,
                 cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                 delta_time: 0.0,
-            });
+            }));
         }
 
         if let Some(renderer) = self.renderer.as_mut() {
@@ -108,15 +127,22 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 let dt = self.time.delta_time();
 
-                if let (Some(update), Some(window)) = (self.update.as_mut(), self.window.as_ref()) {
-                    update(&mut GameContext {
-                        input: &self.input,
-                        mouse: &self.mouse,
-                        camera: &mut self.camera,
-                        world: &mut self.world,
-                        cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
-                        delta_time: dt,
-                    });
+                if let (Some(update), Some(window), Some(state)) = (
+                    self.update.as_mut(),
+                    self.window.as_ref(),
+                    self.state.as_mut(),
+                ) {
+                    update(
+                        &mut GameContext {
+                            input: &self.input,
+                            mouse: &self.mouse,
+                            camera: &mut self.camera,
+                            world: &mut self.world,
+                            cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
+                            delta_time: dt,
+                        },
+                        state,
+                    );
                 }
                 self.input.end_frame();
                 self.mouse.end_frame();

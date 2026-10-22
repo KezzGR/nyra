@@ -1,5 +1,5 @@
 use glam::{Quat, Vec3};
-use nyra::{App, FreeFlyController, Mesh, RunError, Thing, Transform};
+use nyra::{App, FreeFlyController, Mesh, RunError, Thing, ThingID, Transform};
 
 const GRID_DIM: u32 = 10;
 
@@ -10,9 +10,11 @@ fn main() -> Result<(), RunError> {
 
     let center = (GRID_DIM as f32 - 1.0) / 2.0;
 
-    App::new()
+    App::<CubeWave>::new()
         .setup(|game| {
             let mesh_id = game.world.add_mesh(Mesh::cube());
+
+            let mut cubes = Vec::default();
 
             for x in 0..GRID_DIM {
                 for z in 0..GRID_DIM {
@@ -22,11 +24,14 @@ fn main() -> Result<(), RunError> {
                         Vec3::splat(0.8),
                     );
 
-                    game.world.spawn(Thing::new(transform, mesh_id));
+                    let cube = game.world.spawn(Thing::new(transform, mesh_id));
+                    cubes.push(cube);
                 }
             }
+
+            CubeWave { cubes }
         })
-        .run(move |game| {
+        .run(move |game, state| {
             controller.update(game);
 
             let mut id: usize = 0;
@@ -40,10 +45,14 @@ fn main() -> Result<(), RunError> {
 
                     let distance = (dx * dx + dz * dz).sqrt();
 
-                    game.world.things[id].transform.position.y =
+                    game.world[state.cubes[id]].transform.position.y =
                         0.9 * (1.2 * distance - 3.0 * time).sin();
                     id += 1;
                 }
             }
         })
+}
+
+struct CubeWave {
+    cubes: Vec<ThingID>,
 }
