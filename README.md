@@ -4,111 +4,112 @@ I'm building my own 3D game engine in Rust.
 
 Why? Mostly because I wanted to understand how game engines actually work instead of just using one.
 
-So I started writing my own renderer, input system, camera, and everything else, one piece at a time.
+It started with a triangle. Then a cube. Then a camera, an input system, a basic world, and a bunch of other things I didn't know how to write a few weeks ago.
 
 The cube has friends now. And they move.
 
 ![Nyra cube wave demo](assets/cube-wave.gif)
 
-*100 cubes, one shared mesh, and a sine wave. No animation system required.*
+*100 cubes sharing one mesh, moving in a sine wave.*
 
 ## Getting Started
 
-Clone the repository and run the cube wave example:
+Clone the repository:
 
 ```bash
 git clone https://github.com/KezzGR/nyra.git
 cd nyra
+```
+
+Run the cube wave example:
+
+```bash
 cargo run -p nyra --example cube_wave
 ```
 
-Or try the other examples:
+There are a few other examples too:
 
 ```bash
 cargo run -p nyra --example world
 cargo run -p nyra --example camera_move
+cargo run -p nyra --example delete_objects
 ```
 
-**Controls:**
+In examples using the free-fly camera, use **WASD** to move and the **mouse** to look around. Press **Escape** to release the cursor and click to capture it again.
 
-- **WASD**: Move around
-- **Mouse**: Look around
-- **Escape**: Release the cursor
-- **Left click**: Capture it again
+In `delete_objects`, **Space** removes cubes and **Enter** cycles through hiding them.
 
 ## What Works So Far
 
-### Rendering
+Nyra can render basic 3D geometry using `wgpu`. There's perspective projection, depth buffering, simple directional lighting, and support for drawing multiple objects using the same mesh.
 
-- 3D rendering with `wgpu`
-- Procedural cube and cuboid generation
-- Indexed meshes with face normals
-- Multiple objects sharing a single mesh
-- Perspective projection and depth buffering
-- Basic directional Lambert lighting
-- Window resizing
+So far I've written procedural generators for cubes and cuboids. Nothing fancy yet, but I'm planning to add more shapes.
 
-### World & Objects
+There's also a small world system. You can spawn objects, move or rotate them, hide them, and remove them entirely. Each object gets its own `ThingID`, so you don't have to rely on its position in a vector.
 
-- `World` stores meshes and objects (`Thing`)
-- `Transform` controls position, rotation, and scale
-- `world.spawn()` returns a `ThingID`
-- Objects can be accessed with `world[id]`
-- Object transforms can be changed every frame
+The camera supports free movement with the mouse and keyboard. Input handling includes key presses, releases, held keys, mouse movement, and cursor locking.
 
-### Camera & Input
+I've also been working on making the API less annoying to use. You don't need to deal with the window or event loop yourself just to put a cube on the screen.
 
-- Free-fly camera with mouse and keyboard controls
-- Quaternion-based camera rotation
-- World-space and local-space movement
-- Pressed, held, and released keyboard states
-- Mouse movement tracking
-- Delta time for frame-independent movement
-- Cursor locking and visibility controls
+## A Small Example
 
-### Application
-
-Nyra handles the window, event loop, and rendering internally. Game code runs through `App::setup()` and `App::run()` without dealing with `winit` directly.
-
-## The API
-
-Here's a small example that creates a cube and moves it upward every frame:
+Here's a cube that moves upward:
 
 ```rust
-use nyra::{App, Mesh, RunError, Thing, Transform};
+use nyra::{App, Mesh, RunError, Thing, ThingID, Transform};
+
+struct GameState {
+    cube: ThingID,
+}
 
 fn main() -> Result<(), RunError> {
-    App::new()
+    App::<GameState>::new()
         .setup(|game| {
-            let mesh_id = game.world.add_mesh(Mesh::cube());
-            game.world.spawn(Thing::new(Transform::default(), mesh_id));
+            let mesh = game.world.add_mesh(Mesh::cube());
+
+            let cube = game.world.spawn(
+                Thing::new(Transform::default(), mesh)
+            );
+
+            GameState { cube }
         })
-        .run(|game| {
-            game.world.things[0].transform.position.y += game.delta_time;
+        .run_with_state(|game, state| {
+            game.world[state.cube].transform.position.y +=
+                game.delta_time;
         })
 }
 ```
 
-For a more interesting example, see [`cube_wave.rs`](crates/nyra/examples/cube_wave.rs). It animates a grid of 100 cubes using a sine wave, without touching the renderer.
+`setup()` runs once and returns whatever state your game needs. `run_with_state()` receives that state every frame.
+
+For simpler applications, you can skip the state entirely and just use `App::run()`.
+
+Objects can also be accessed with `world.get()` and `world.get_mut()` if you don't want to panic when an ID no longer exists.
+
+The [cube wave example](crates/nyra/examples/cube_wave.rs) shows a slightly more interesting use of the world API.
 
 ## Project Structure
 
-Nyra currently consists of two Rust crates:
+There are currently two crates:
 
-- **`nyra`**: Rendering, application lifecycle, world, camera, input, and other engine systems.
-- **`nyra_math`**: My own math experiments, currently including a custom `Vec3` implementation.
+- **`nyra`** contains the renderer, application loop, world, camera, input, and the rest of the engine.
+- **`nyra_math`** is where I'm experimenting with my own math implementations. Right now it mainly contains a custom `Vec3`.
 
-The engine also uses `glam` for camera and transform math.
+I'm still using `glam` for some of the engine's math, particularly camera and transform calculations.
 
-## Current State
+## What's Missing?
 
-This is still a very early project. There's a basic world and object API, but no full scene system, physics, asset loading, textures, or materials yet.
+A lot, honestly.
 
-New meshes are currently uploaded to the GPU after `setup()`, not dynamically during the game loop. Rendering is also not instanced yet.
+There are no materials, textures, physics, model loading, or proper animation system yet. There's no editor either.
 
-I'm learning Rust and graphics programming while building this, so expect the code and API to change quite a bit.
+Meshes can be added while the game is running, and the renderer will upload them to the GPU. However, changing the vertices of an existing mesh won't update its GPU copy yet.
 
-For now, I'm just building things, breaking things, figuring out why they broke, and moving on to the next piece.
+Rendering is also pretty basic. There's no instancing, and I haven't really started optimizing things.
+
+The API is still changing quite often, usually whenever I try to build something with it and realize that my previous design was inconvenient.
+
+For now, I'm mostly trying to get the fundamentals right and learn how all of this works.
 
 ## Built With
 
