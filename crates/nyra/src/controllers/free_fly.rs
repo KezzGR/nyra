@@ -46,7 +46,7 @@ impl FreeFlyController {
 
         if game.cursor.is_locked() {
             self.yaw += game.mouse.delta.x * self.sensitivity;
-            self.pitch -= game.mouse.delta.y * self.sensitivity;
+            self.pitch += game.mouse.delta.y * self.sensitivity;
 
             self.pitch = self
                 .pitch

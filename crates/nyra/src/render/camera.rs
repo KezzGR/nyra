@@ -16,7 +16,7 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             transform: Transform::default(),
-            vertical_fov: 70.0,
+            vertical_fov: 70.0_f32.to_radians(),
             near: 0.01,
             far: 100.0,
         }
@@ -42,6 +42,6 @@ impl Camera {
     }
 
     pub fn projection_matrix(&self, aspect_ratio: f32) -> Mat4 {
-        proj::vulkan::perspective(self.vertical_fov, aspect_ratio, self.near, self.far)
+        proj::directx::perspective(self.vertical_fov, aspect_ratio, self.near, self.far)
     }
 }
