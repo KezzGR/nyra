@@ -31,7 +31,7 @@ impl World {
     pub fn add_mesh(&mut self, mesh: Mesh) -> usize {
         self.mesh_storage.push(mesh);
 
-        self.mesh_storage.len() as usize - 1
+        self.mesh_storage.len() - 1
     }
 
     pub fn despawn(&mut self, thing_id: ThingID) {
@@ -39,24 +39,26 @@ impl World {
             self.things.remove(index);
         }
     }
+
+    pub fn get(&self, id: ThingID) -> Option<&Thing> {
+        self.things.iter().find(|thing| thing.id == id)
+    }
+
+    pub fn get_mut(&mut self, id: ThingID) -> Option<&mut Thing> {
+        self.things.iter_mut().find(|thing| thing.id == id)
+    }
 }
 
 impl Index<ThingID> for World {
     type Output = Thing;
 
     fn index(&self, index: ThingID) -> &Self::Output {
-        self.things
-            .iter()
-            .find(|thing| thing.id == index)
-            .expect("Thing not found")
+        self.get(index).expect("Thing not found")
     }
 }
 
 impl IndexMut<ThingID> for World {
     fn index_mut(&mut self, index: ThingID) -> &mut Self::Output {
-        self.things
-            .iter_mut()
-            .find(|thing| thing.id == index)
-            .expect("Thing not found")
+        self.get_mut(index).expect("Thing not found")
     }
 }
