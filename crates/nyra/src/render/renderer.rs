@@ -238,6 +238,10 @@ impl Renderer {
             render_pass.set_pipeline(&self.pipeline);
 
             for thing in &world.things {
+                if !thing.visible {
+                    continue;
+                }
+
                 let gpu_thing = GpuThing::new(&self.device, &self.uniform_bind_group_layout);
                 let gpu_mesh = &self.gpu_meshes[thing.mesh_id];
 

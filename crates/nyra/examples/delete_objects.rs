@@ -26,14 +26,30 @@ fn main() -> Result<(), RunError> {
                 }
             }
 
-            DeleteObjects { cubes, cube_id: 0 }
+            DeleteObjects {
+                cubes,
+                cube_id: 0,
+                previous_cube: None,
+            }
         })
         .run_with_state(move |game, state| {
             controller.update(game);
 
             if game.input.key_just_pressed(KeyCode::Space) {
-                if let Some(&id) = state.cubes.get(state.cube_id) {
+                if let Some(id) = state.cubes.pop() {
                     game.world.despawn(id);
+                }
+            }
+
+            if game.input.key_just_pressed(KeyCode::Enter) {
+                if let Some(&cube) = state.cubes.get(state.cube_id) {
+                    if let Some(previous) = state.previous_cube {
+                        game.world[previous].visible = true;
+                    }
+
+                    game.world[cube].visible = false;
+
+                    state.previous_cube = Some(cube);
                     state.cube_id += 1;
                 }
             }
@@ -43,4 +59,5 @@ fn main() -> Result<(), RunError> {
 struct DeleteObjects {
     cubes: Vec<ThingID>,
     cube_id: usize,
+    previous_cube: Option<ThingID>,
 }

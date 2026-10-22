@@ -4,6 +4,7 @@ pub struct Thing {
     pub transform: Transform,
     pub mesh_id: usize,
     pub id: ThingID,
+    pub visible: bool,
 }
 
 impl Thing {
@@ -12,6 +13,7 @@ impl Thing {
             transform,
             mesh_id,
             id: ThingID(0),
+            visible: true,
         }
     }
 }
