@@ -170,6 +170,8 @@ impl Renderer {
     }
 
     pub fn render(&mut self, camera: &Camera, world: &World) {
+        self.sync_meshes(world);
+
         let mut needs_reconfigure = false;
 
         let frame = match self.surface.get_current_texture() {
@@ -310,6 +312,12 @@ impl Renderer {
             let gpu_mesh = GpuMesh::new(&world.mesh_storage[thing.mesh_id], &self.device);
 
             self.gpu_meshes.push(gpu_mesh);
+        }
+    }
+
+    fn sync_meshes(&mut self, world: &World) {
+        for mesh in world.mesh_storage.iter().skip(self.gpu_meshes.len()) {
+            self.gpu_meshes.push(GpuMesh::new(mesh, &self.device));
         }
     }
 }
