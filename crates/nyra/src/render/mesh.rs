@@ -9,32 +9,57 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn cube() -> Self {
-        Mesh::cuboid(Vec3::ONE)
+        Self::cuboid(Vec3::ONE)
     }
 
     pub fn cuboid(size: Vec3) -> Self {
-        let h = size / 2.0;
-        let axes = [Vec3::X, Vec3::Y, Vec3::Z];
+        assert!(
+            size.x.is_finite()
+                && size.x > 0.0
+                && size.y.is_finite()
+                && size.y > 0.0
+                && size.z.is_finite()
+                && size.z > 0.0,
+            "Cuboid dimensions must be finite and greater than zero"
+        );
 
         let mut vertices = Vec::with_capacity(24);
         let mut indices = Vec::with_capacity(36);
 
-        for i in 0..3 {
-            let a = axes[(i + 1) % 3] * h[(i + 1) % 3];
-            let b = axes[(i + 2) % 3] * h[(i + 2) % 3];
+        let axes = [Vec3::X, Vec3::Y, Vec3::Z];
+        let half_size = size / 2.0;
 
-            for sign in [-1.0, 1.0] {
-                let n = axes[i] * sign;
-                let c = h[i] * n;
-                let b = b * sign;
+        for normal_axis_index in 0..axes.len() {
+            let edge_a_axis_index = (normal_axis_index + 1) % axes.len();
+            let edge_b_axis_index = (normal_axis_index + 2) % axes.len();
 
-                let base = vertices.len() as u32;
+            let half_edge_a = axes[edge_a_axis_index] * half_size[edge_a_axis_index];
+            let half_edge_b = axes[edge_b_axis_index] * half_size[edge_b_axis_index];
 
-                for position in [c - a - b, c + a - b, c + a + b, c - a + b] {
-                    vertices.push(Vertex::new(position.to_array(), n.to_array()));
+            for side_sign in [-1.0, 1.0] {
+                let face_normal = axes[normal_axis_index] * side_sign;
+                let face_center = half_size[normal_axis_index] * face_normal;
+                let oriented_half_edge_b = half_edge_b * side_sign;
+
+                let first_vertex_index = vertices.len() as u32;
+
+                for position in [
+                    face_center - half_edge_a - oriented_half_edge_b,
+                    face_center + half_edge_a - oriented_half_edge_b,
+                    face_center + half_edge_a + oriented_half_edge_b,
+                    face_center - half_edge_a + oriented_half_edge_b,
+                ] {
+                    vertices.push(Vertex::new(position.to_array(), face_normal.to_array()));
                 }
 
-                indices.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
+                indices.extend_from_slice(&[
+                    first_vertex_index,
+                    first_vertex_index + 1,
+                    first_vertex_index + 2,
+                    first_vertex_index,
+                    first_vertex_index + 2,
+                    first_vertex_index + 3,
+                ]);
             }
         }
 
