@@ -15,7 +15,7 @@ struct TransformUniform {
 }
 @fragment fn fs_main(@location(1) normal: vec3<f32>) -> @location(0) vec4<f32> {
     let normal_dir = normalize(normal);
-    let light_dir = normalize(vec3<f32>(1.0, 0.0, 0.0));
+    let light_dir = normalize(vec3<f32>(1.0, 4.0, 0.0));
     let lambert = max(0, dot(normal_dir, light_dir));
     return vec4<f32>(lambert, 0.2 * lambert, 0.2 * lambert, 1.0);
 }
