@@ -122,10 +122,6 @@ impl<S> ApplicationHandler for App<S> {
                 delta_time: 0.0,
             }));
         }
-
-        if let Some(renderer) = self.renderer.as_mut() {
-            renderer.fill_gpu_meshes(&self.world);
-        }
     }
 
     fn window_event(

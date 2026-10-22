@@ -303,18 +303,6 @@ impl Renderer {
         self.window.request_redraw();
     }
 
-    pub fn fill_gpu_meshes(&mut self, world: &World) {
-        for thing in &world.things {
-            if self.gpu_meshes.get(thing.mesh_id).is_some() {
-                continue;
-            }
-
-            let gpu_mesh = GpuMesh::new(&world.mesh_storage[thing.mesh_id], &self.device);
-
-            self.gpu_meshes.push(gpu_mesh);
-        }
-    }
-
     fn sync_meshes(&mut self, world: &World) {
         for mesh in world.mesh_storage.iter().skip(self.gpu_meshes.len()) {
             self.gpu_meshes.push(GpuMesh::new(mesh, &self.device));
