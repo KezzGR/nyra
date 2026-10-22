@@ -20,5 +20,6 @@ pub use crate::render::mesh::Mesh;
 pub use crate::render::renderer::Renderer;
 pub use crate::time::Time;
 pub use crate::world::Thing;
+pub use crate::world::ThingID;
 pub use crate::world::transform::Transform;
 pub use winit::error::EventLoopError as RunError;

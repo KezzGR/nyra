@@ -17,11 +17,17 @@ fn main() -> Result<(), RunError> {
             let right_cube = Thing::new(right_cube_transform, mesh_id);
             let idk_cube = Thing::new(idk_cube_transform, mesh_id);
 
-            game.world.spawn(left_cube);
+            let left_cube = game.world.spawn(left_cube);
             game.world.spawn(right_cube);
             game.world.spawn(idk_cube);
+
+            game.world[left_cube]
+                .transform
+                .translate_local(Vec3::Y * 2.0);
         })
         .run(move |game| {
             controller.update(game);
+
+            game.world.things[0].transform.position.x += game.delta_time * 2.0;
         })
 }
