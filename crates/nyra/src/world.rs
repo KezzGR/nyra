@@ -33,6 +33,12 @@ impl World {
 
         self.mesh_storage.len() as usize - 1
     }
+
+    pub fn despawn(&mut self, thing_id: ThingID) {
+        if let Some(index) = self.things.iter().position(|t| t.id == thing_id) {
+            self.things.remove(index);
+        }
+    }
 }
 
 impl Index<ThingID> for World {
