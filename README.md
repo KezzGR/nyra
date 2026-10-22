@@ -6,19 +6,26 @@ Why? Mostly because I wanted to understand how game engines actually work instea
 
 So I started writing my own renderer, input system, camera, and everything else, one piece at a time.
 
-Right now, Nyra renders a spinning cube that you can freely fly around.
+The cube has friends now. And they move.
 
-Yes, a cube. We're getting there.
+![Nyra cube wave demo](assets/cube-wave.gif)
 
-![Nyra free-fly camera demo](assets/nyra-demo.gif)
+*100 cubes, one shared mesh, and a sine wave. No animation system required.*
 
 ## Getting Started
 
-Clone the repository and run the camera example:
+Clone the repository and run the cube wave example:
 
 ```bash
 git clone https://github.com/KezzGR/nyra.git
 cd nyra
+cargo run -p nyra --example cube_wave
+```
+
+Or try the other examples:
+
+```bash
+cargo run -p nyra --example world
 cargo run -p nyra --example camera_move
 ```
 
@@ -36,78 +43,68 @@ cargo run -p nyra --example camera_move
 - 3D rendering with `wgpu`
 - Procedural cube and cuboid generation
 - Indexed meshes with face normals
-- Perspective projection
-- Basic Lambert lighting
-- Depth buffering
+- Multiple objects sharing a single mesh
+- Perspective projection and depth buffering
+- Basic directional Lambert lighting
 - Window resizing
+
+### World & Objects
+
+- `World` stores meshes and objects (`Thing`)
+- `Transform` controls position, rotation, and scale
+- `world.spawn()` returns a `ThingID`
+- Objects can be accessed with `world[id]`
+- Object transforms can be changed every frame
 
 ### Camera & Input
 
-- Free-fly camera with keyboard and mouse controls
+- Free-fly camera with mouse and keyboard controls
 - Quaternion-based camera rotation
 - World-space and local-space movement
-- Keyboard input with pressed, held, and released states
+- Pressed, held, and released keyboard states
 - Mouse movement tracking
 - Delta time for frame-independent movement
 - Cursor locking and visibility controls
 
 ### Application
 
-Nyra handles the window, event loop, and rendering internally.
-
-There's also a small API for running your own code without having to deal with `winit` directly.
+Nyra handles the window, event loop, and rendering internally. Game code runs through `App::setup()` and `App::run()` without dealing with `winit` directly.
 
 ## The API
 
-Here's the current free-fly camera example:
+Here's a small example that creates a cube and moves it upward every frame:
 
 ```rust
-use nyra::{App, FreeFlyController, RunError};
+use nyra::{App, Mesh, RunError, Thing, Transform};
 
 fn main() -> Result<(), RunError> {
-    let mut controller = FreeFlyController::default();
-
     App::new()
         .setup(|game| {
-            game.cursor.set_locked(true);
-            game.cursor.set_visible(false);
+            let mesh_id = game.world.add_mesh(Mesh::cube());
+            game.world.spawn(Thing::new(Transform::default(), mesh_id));
         })
-        .run(move |game| {
-            controller.update(game);
+        .run(|game| {
+            game.world.things[0].transform.position.y += game.delta_time;
         })
 }
 ```
 
-`setup()` runs once, after the window and renderer are initialized.
-
-`run()` takes a callback that gets executed every frame.
-
-Both use `GameContext`, which gives access to the camera, keyboard, mouse, cursor, and delta time.
-
-I want the API to stay simple. If I want to hide the cursor, I should be able to write:
-
-```rust
-game.cursor.set_visible(false);
-```
-
-And that's it.
+For a more interesting example, see [`cube_wave.rs`](crates/nyra/examples/cube_wave.rs). It animates a grid of 100 cubes using a sine wave, without touching the renderer.
 
 ## Project Structure
 
 Nyra currently consists of two Rust crates:
 
-- **`nyra`**: Rendering, application lifecycle, camera, input, and other engine systems.
-- **`nyra_math`**: My own little math experiments, currently including a custom `Vec3` implementation.
+- **`nyra`**: Rendering, application lifecycle, world, camera, input, and other engine systems.
+- **`nyra_math`**: My own math experiments, currently including a custom `Vec3` implementation.
 
 The engine also uses `glam` for camera and transform math.
 
 ## Current State
 
-This is still a very early project.
+This is still a very early project. There's a basic world and object API, but no full scene system, physics, asset loading, textures, or materials yet.
 
-There's no proper scene system yet. No asset loading, no materials, and no API for spawning arbitrary objects.
-
-The renderer currently draws one built-in rotating cube.
+New meshes are currently uploaded to the GPU after `setup()`, not dynamically during the game loop. Rendering is also not instanced yet.
 
 I'm learning Rust and graphics programming while building this, so expect the code and API to change quite a bit.
 
