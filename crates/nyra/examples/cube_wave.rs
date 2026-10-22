@@ -31,7 +31,7 @@ fn main() -> Result<(), RunError> {
 
             CubeWave { cubes }
         })
-        .run(move |game, state| {
+        .run_with_state(move |game, state| {
             controller.update(game);
 
             let mut id: usize = 0;

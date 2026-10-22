@@ -15,7 +15,7 @@ use crate::{
     world::World,
 };
 
-pub struct App<S> {
+pub struct App<S = ()> {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
     setup: Option<Box<dyn FnOnce(&mut GameContext) -> S>>,
@@ -27,6 +27,21 @@ pub struct App<S> {
     time: Time,
     cursor_state: CursorState,
     world: World,
+}
+
+impl App<()> {
+    pub fn run<F>(mut self, mut update: F) -> Result<(), EventLoopError>
+    where
+        F: FnMut(&mut GameContext) + 'static,
+    {
+        if self.setup.is_none() {
+            self.setup = Some(Box::new(|_| {}));
+        }
+
+        self.run_with_state(move |game, _state| {
+            update(game);
+        })
+    }
 }
 
 impl<S> App<S> {
@@ -42,7 +57,7 @@ impl<S> App<S> {
         self
     }
 
-    pub fn run<F>(mut self, update: F) -> Result<(), EventLoopError>
+    pub fn run_with_state<F>(mut self, update: F) -> Result<(), EventLoopError>
     where
         F: FnMut(&mut GameContext, &mut S) + 'static,
         S: 'static,
