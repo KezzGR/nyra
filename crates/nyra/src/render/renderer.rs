@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
     BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
@@ -15,6 +18,7 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
+    ThingID,
     render::{Camera, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
@@ -37,6 +41,7 @@ pub struct Renderer {
     uniform_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
     gpu_meshes: Vec<GpuMesh>,
+    gpu_things: HashMap<ThingID, GpuThing>,
 }
 
 impl Renderer {
@@ -166,11 +171,13 @@ impl Renderer {
             uniform_bind_group_layout,
             pipeline,
             gpu_meshes: Vec::default(),
+            gpu_things: HashMap::default(),
         }
     }
 
     pub fn render(&mut self, camera: &Camera, world: &World) {
         self.sync_meshes(world);
+        self.sync_things(world);
 
         let mut needs_reconfigure = false;
 
@@ -242,8 +249,12 @@ impl Renderer {
                     continue;
                 }
 
-                let gpu_thing = GpuThing::new(&self.device, &self.uniform_bind_group_layout);
                 let gpu_mesh = &self.gpu_meshes[thing.mesh_id];
+
+                let gpu_thing = self
+                    .gpu_things
+                    .get(&thing.id)
+                    .expect("GpuThing missing after synchronization");
 
                 self.queue.write_buffer(
                     &gpu_thing.uniform_buffer,
@@ -310,6 +321,18 @@ impl Renderer {
     fn sync_meshes(&mut self, world: &World) {
         for mesh in world.mesh_storage.iter().skip(self.gpu_meshes.len()) {
             self.gpu_meshes.push(GpuMesh::new(mesh, &self.device));
+        }
+    }
+
+    fn sync_things(&mut self, world: &World) {
+        let alive: HashSet<ThingID> = world.things.iter().map(|thing| thing.id).collect();
+
+        self.gpu_things.retain(|id, _| alive.contains(id));
+
+        for thing in &world.things {
+            self.gpu_things
+                .entry(thing.id)
+                .or_insert_with(|| GpuThing::new(&self.device, &self.uniform_bind_group_layout));
         }
     }
 }
