@@ -9,8 +9,8 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    pub const ZERO: Self = Self::new(0.0, 0.0);
-    pub const ONE: Self = Self::new(1.0, 1.0);
+    pub const ZERO: Self = Self::splat(0.0);
+    pub const ONE: Self = Self::splat(1.0);
 
     pub const X: Self = Self::new(1.0, 0.0);
     pub const Y: Self = Self::new(0.0, 1.0);
@@ -23,11 +23,49 @@ impl Vec2 {
     }
 
     pub const fn splat(value: f32) -> Self {
-        Self { x: value, y: value }
+        Self::new(value, value)
     }
 
-    pub fn to_array(&self) -> [f32; 2] {
+    pub const fn to_array(self) -> [f32; 2] {
         [self.x, self.y]
+    }
+
+    pub fn length(self) -> f32 {
+        self.length_squared().sqrt()
+    }
+
+    pub fn length_squared(self) -> f32 {
+        self.dot(self)
+    }
+
+    pub fn distance(self, other: Self) -> f32 {
+        (other - self).length()
+    }
+
+    pub fn distance_squared(self, other: Self) -> f32 {
+        (other - self).length_squared()
+    }
+
+    pub fn dot(self, other: Self) -> f32 {
+        self.x * other.x + self.y * other.y
+    }
+
+    pub fn normalize(self) -> Self {
+        self / self.length()
+    }
+
+    pub fn try_normalize(self) -> Option<Self> {
+        let length = self.length();
+
+        if length > 0.0 && length.is_finite() {
+            Some(self / length)
+        } else {
+            None
+        }
+    }
+
+    pub fn normalize_or_zero(self) -> Self {
+        self.try_normalize().unwrap_or(Self::ZERO)
     }
 }
 

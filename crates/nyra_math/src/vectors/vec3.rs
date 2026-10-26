@@ -10,8 +10,8 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    pub const ZERO: Self = Self::new(0.0, 0.0, 0.0);
-    pub const ONE: Self = Self::new(1.0, 1.0, 1.0);
+    pub const ZERO: Self = Self::splat(0.0);
+    pub const ONE: Self = Self::splat(1.0);
 
     pub const X: Self = Self::new(1.0, 0.0, 0.0);
     pub const Y: Self = Self::new(0.0, 1.0, 0.0);
@@ -29,8 +29,54 @@ impl Vec3 {
         Self::new(value, value, value)
     }
 
-    pub fn to_array(&self) -> [f32; 3] {
+    pub const fn to_array(self) -> [f32; 3] {
         [self.x, self.y, self.z]
+    }
+
+    pub fn length(self) -> f32 {
+        self.length_squared().sqrt()
+    }
+
+    pub fn length_squared(self) -> f32 {
+        self.dot(self)
+    }
+
+    pub fn distance(self, other: Self) -> f32 {
+        (self - other).length()
+    }
+
+    pub fn distance_squared(self, other: Self) -> f32 {
+        (self - other).length_squared()
+    }
+
+    pub fn dot(self, other: Self) -> f32 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn cross(self, other: Self) -> Self {
+        Self::new(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+    }
+
+    pub fn normalize(self) -> Self {
+        self / self.length()
+    }
+
+    pub fn try_normalize(self) -> Option<Self> {
+        let length = self.length();
+
+        if length > 0.0 && length.is_finite() {
+            Some(self / length)
+        } else {
+            None
+        }
+    }
+
+    pub fn normalize_or_zero(self) -> Self {
+        self.try_normalize().unwrap_or(Self::ZERO)
     }
 }
 
