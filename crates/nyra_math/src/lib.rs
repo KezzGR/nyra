@@ -1,3 +1,4 @@
-mod vec3;
+mod vectors;
 
-pub use vec3::Vec3;
+pub use vectors::Vec2;
+pub use vectors::Vec3;
