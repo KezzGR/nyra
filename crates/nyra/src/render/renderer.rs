@@ -18,8 +18,8 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    ThingID,
-    render::{Camera, GpuMesh, GpuThing, TransformUniform, Vertex},
+    MaterialID, MaterialUniform, ThingID,
+    render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
 
@@ -38,10 +38,12 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     depth_texture: Texture,
     depth_view: TextureView,
-    uniform_bind_group_layout: BindGroupLayout,
+    transform_bind_group_layout: BindGroupLayout,
+    material_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
     gpu_meshes: Vec<GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
+    gpu_materials: HashMap<MaterialID, GpuMaterial>,
 }
 
 impl Renderer {
@@ -99,12 +101,27 @@ impl Renderer {
 
         let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
-        let uniform_bind_group_layout =
+        let transform_bind_group_layout =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: Some("Transform Bind Group Layout"),
                 entries: &[BindGroupLayoutEntry {
                     binding: 0,
                     visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let material_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("Material Bind Group Layout"),
+                entries: &[BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -121,7 +138,10 @@ impl Renderer {
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Triangle Pipeline Layout"),
-            bind_group_layouts: &[Some(&uniform_bind_group_layout)],
+            bind_group_layouts: &[
+                Some(&transform_bind_group_layout),
+                Some(&material_bind_group_layout),
+            ],
             immediate_size: 0,
         });
 
@@ -168,16 +188,19 @@ impl Renderer {
             config,
             depth_texture,
             depth_view,
-            uniform_bind_group_layout,
+            transform_bind_group_layout,
+            material_bind_group_layout,
             pipeline,
             gpu_meshes: Vec::default(),
             gpu_things: HashMap::default(),
+            gpu_materials: HashMap::default(),
         }
     }
 
     pub fn render(&mut self, camera: &Camera, world: &World) {
         self.sync_meshes(world);
         self.sync_things(world);
+        self.sync_materials(world);
 
         let mut needs_reconfigure = false;
 
@@ -249,12 +272,23 @@ impl Renderer {
                     continue;
                 }
 
+                let Some(material) = &thing.material else {
+                    continue;
+                };
+
                 let gpu_mesh = &self.gpu_meshes[thing.mesh_id];
 
                 let gpu_thing = self
                     .gpu_things
                     .get(&thing.id)
                     .expect("GpuThing missing after synchronization");
+
+                let gpu_material = self
+                    .gpu_materials
+                    .get(material)
+                    .expect("GpuMaterial missing after synchronization");
+
+                render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
 
                 self.queue.write_buffer(
                     &gpu_thing.uniform_buffer,
@@ -332,7 +366,24 @@ impl Renderer {
         for thing in &world.things {
             self.gpu_things
                 .entry(thing.id)
-                .or_insert_with(|| GpuThing::new(&self.device, &self.uniform_bind_group_layout));
+                .or_insert_with(|| GpuThing::new(&self.device, &self.transform_bind_group_layout));
+        }
+    }
+
+    fn sync_materials(&mut self, world: &World) {
+        self.gpu_materials
+            .retain(|id, _| world.material_storage.contains_key(id));
+
+        for (id, material) in &world.material_storage {
+            let gpu_material = self.gpu_materials.entry(*id).or_insert_with(|| {
+                GpuMaterial::new(&self.device, &self.material_bind_group_layout)
+            });
+
+            self.queue.write_buffer(
+                &gpu_material.uniform_buffer,
+                0,
+                bytemuck::bytes_of(&MaterialUniform::new(material.base_color)),
+            );
         }
     }
 }

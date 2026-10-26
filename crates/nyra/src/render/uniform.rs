@@ -15,3 +15,15 @@ impl TransformUniform {
         }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Pod, Zeroable)]
+pub struct MaterialUniform {
+    pub base_color: [f32; 4],
+}
+
+impl MaterialUniform {
+    pub fn new(base_color: [f32; 4]) -> Self {
+        Self { base_color }
+    }
+}

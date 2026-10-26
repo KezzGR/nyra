@@ -1,10 +1,11 @@
-use crate::{ThingID, Transform};
+use crate::{MaterialID, ThingID, Transform};
 
 pub struct Thing {
     pub transform: Transform,
     pub mesh_id: usize,
     pub id: ThingID,
     pub visible: bool,
+    pub material: Option<MaterialID>,
 }
 
 impl Thing {
@@ -14,6 +15,13 @@ impl Thing {
             mesh_id,
             id: ThingID(0),
             visible: true,
+            material: None,
         }
+    }
+
+    pub fn with_material(mut self, material: MaterialID) -> Self {
+        self.material = Some(material);
+
+        self
     }
 }

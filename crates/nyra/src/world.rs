@@ -2,18 +2,23 @@ pub mod thing;
 pub mod thing_id;
 pub mod transform;
 
-use std::ops::{Index, IndexMut};
+use std::{
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
 pub use thing::Thing;
 pub use thing_id::ThingID;
 
-use crate::Mesh;
+use crate::{Material, MaterialID, Mesh};
 
 #[derive(Default)]
 pub struct World {
     pub things: Vec<Thing>,
     pub mesh_storage: Vec<Mesh>,
+    pub material_storage: HashMap<MaterialID, Material>,
     next_id: u64,
+    next_material_id: u64,
 }
 
 impl World {
@@ -32,6 +37,16 @@ impl World {
         self.mesh_storage.push(mesh);
 
         self.mesh_storage.len() - 1
+    }
+
+    pub fn add_material(&mut self, material: Material) -> MaterialID {
+        let id = MaterialID(self.next_material_id);
+
+        self.next_material_id += 1;
+
+        self.material_storage.insert(id, material);
+
+        id
     }
 
     pub fn despawn(&mut self, thing_id: ThingID) {
