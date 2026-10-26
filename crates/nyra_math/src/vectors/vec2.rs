@@ -39,11 +39,11 @@ impl Vec2 {
     }
 
     pub fn distance(self, other: Self) -> f32 {
-        (other - self).length()
+        (self - other).length()
     }
 
     pub fn distance_squared(self, other: Self) -> f32 {
-        (other - self).length_squared()
+        (self - other).length_squared()
     }
 
     pub fn dot(self, other: Self) -> f32 {
