@@ -1,4 +1,4 @@
-use nyra::{App, FreeFlyController, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, ThingID, Transform};
 use nyra_math::{Quat, Vec3};
 use winit::keyboard::KeyCode;
 
@@ -11,6 +11,8 @@ fn main() -> Result<(), RunError> {
         .setup(|game| {
             let mesh_id = game.world.add_mesh(Mesh::cube());
 
+            let material_id = game.world.add_material(Material::default());
+
             let mut cubes = Vec::default();
 
             for x in 0..GRID_DIM {
@@ -21,7 +23,9 @@ fn main() -> Result<(), RunError> {
                         Vec3::splat(0.8),
                     );
 
-                    let cube = game.world.spawn(Thing::new(transform, mesh_id));
+                    let cube = game
+                        .world
+                        .spawn(Thing::new(transform, mesh_id).with_material(material_id));
                     cubes.push(cube);
                 }
             }
