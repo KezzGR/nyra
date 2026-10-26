@@ -260,8 +260,8 @@ impl Renderer {
                     &gpu_thing.uniform_buffer,
                     0,
                     bytemuck::bytes_of(&TransformUniform::new(
-                        thing.transform.model_matrix().to_cols_array_2d(),
-                        projection_view.to_cols_array_2d(),
+                        thing.transform.model_matrix().to_cols_array(),
+                        projection_view.to_cols_array(),
                     )),
                 );
 

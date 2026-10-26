@@ -1,4 +1,4 @@
-use glam::Vec2;
+use nyra_math::Vec2;
 
 #[derive(Default)]
 pub struct Mouse {

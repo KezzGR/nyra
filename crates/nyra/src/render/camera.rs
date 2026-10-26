@@ -1,7 +1,4 @@
-use glam::{
-    Mat4,
-    camera::lh::{proj, view},
-};
+use nyra_math::{Mat4, projection, view};
 
 use crate::Transform;
 
@@ -34,7 +31,7 @@ impl Camera {
     }
 
     pub fn view_matrix(&self) -> Mat4 {
-        view::look_to_mat4(
+        view::look_to_lh(
             self.transform.position,
             self.transform.forward(),
             self.transform.up(),
@@ -42,6 +39,6 @@ impl Camera {
     }
 
     pub fn projection_matrix(&self, aspect_ratio: f32) -> Mat4 {
-        proj::directx::perspective(self.vertical_fov, aspect_ratio, self.near, self.far)
+        projection::perspective_lh_zo(self.vertical_fov, aspect_ratio, self.near, self.far)
     }
 }

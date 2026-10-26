@@ -40,8 +40,12 @@ impl Mat4 {
             [x.x, x.y, x.z, 0.0],
             [y.x, y.y, y.z, 0.0],
             [z.x, z.y, z.z, 0.0],
-            [transtation.x, transtation.y, transtation.x, 0.0],
+            [transtation.x, transtation.y, transtation.z, 1.0],
         ])
+    }
+
+    pub fn to_cols_array(self) -> [[f32; 4]; 4] {
+        self.cols
     }
 }
 

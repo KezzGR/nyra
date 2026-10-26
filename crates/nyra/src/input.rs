@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use glam::Vec3;
+use nyra_math::Vec3;
 use winit::{
     event::{ElementState, KeyEvent},
     keyboard::{KeyCode, PhysicalKey},

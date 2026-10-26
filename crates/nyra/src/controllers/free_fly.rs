@@ -1,4 +1,4 @@
-use glam::Quat;
+use nyra_math::Quat;
 
 use crate::GameContext;
 

@@ -1,4 +1,4 @@
-use glam::{Quat, Vec3};
+use nyra_math::{Quat, Vec3};
 use nyra::{App, FreeFlyController, Mesh, RunError, Thing, Transform};
 
 fn main() -> Result<(), RunError> {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use glam::{Quat, Vec2, Vec3};
+use nyra_math::{Quat, Vec2, Vec3};
 use winit::{
     application::ApplicationHandler,
     error::EventLoopError,
