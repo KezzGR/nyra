@@ -1,5 +1,5 @@
-use nyra_math::{Quat, Vec3};
 use nyra::{App, FreeFlyController, Mesh, RunError, Thing, ThingID, Transform};
+use nyra_math::{Quat, Vec3};
 
 const GRID_DIM: u32 = 10;
 

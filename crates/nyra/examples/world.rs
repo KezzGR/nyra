@@ -1,5 +1,5 @@
-use nyra_math::{Quat, Vec3};
 use nyra::{App, FreeFlyController, Mesh, RunError, Thing, Transform};
+use nyra_math::{Quat, Vec3};
 
 fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
