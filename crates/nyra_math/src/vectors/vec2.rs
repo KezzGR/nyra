@@ -185,3 +185,88 @@ impl IndexMut<usize> for Vec2 {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EPSILON: f32 = 1e-6;
+
+    #[test]
+    fn constructors() {
+        assert_eq!(Vec2::ZERO, Vec2::new(0.0, 0.0));
+        assert_eq!(Vec2::ONE, Vec2::splat(1.0));
+        assert_eq!(Vec2::X, Vec2::new(1.0, 0.0));
+        assert_eq!(Vec2::NEG_Y, Vec2::new(0.0, -1.0));
+        assert_eq!(Vec2::splat(3.0).to_array(), [3.0, 3.0]);
+    }
+
+    #[test]
+    fn arithmetic() {
+        let a = Vec2::new(2.0, 4.0);
+        let b = Vec2::new(1.0, 2.0);
+
+        assert_eq!(a + b, Vec2::new(3.0, 6.0));
+        assert_eq!(a - b, Vec2::new(1.0, 2.0));
+        assert_eq!(-a, Vec2::new(-2.0, -4.0));
+
+        assert_eq!(a * 2.0, Vec2::new(4.0, 8.0));
+        assert_eq!(2.0 * a, Vec2::new(4.0, 8.0));
+        assert_eq!(a / 2.0, Vec2::new(1.0, 2.0));
+
+        assert_eq!(a * b, Vec2::new(2.0, 8.0));
+        assert_eq!(a / b, Vec2::new(2.0, 2.0));
+
+        let mut c = a;
+        c += b;
+        c -= b;
+        c *= 2.0;
+        c /= 2.0;
+
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn geometry() {
+        let a = Vec2::ZERO;
+        let b = Vec2::new(3.0, 4.0);
+
+        assert_eq!(b.length(), 5.0);
+        assert_eq!(b.length_squared(), 25.0);
+        assert_eq!(b.dot(Vec2::X), 3.0);
+        assert_eq!(Vec2::X.dot(Vec2::Y), 0.0);
+
+        assert_eq!(a.distance(b), 5.0);
+        assert_eq!(b.distance(a), 5.0);
+        assert_eq!(a.distance_squared(b), 25.0);
+    }
+
+    #[test]
+    fn normalization() {
+        let v = Vec2::new(3.0, 4.0);
+
+        let normalized = v.normalize();
+
+        assert!((normalized.length() - 1.0).abs() < EPSILON);
+        assert!((normalized.x - 0.6).abs() < EPSILON);
+        assert!((normalized.y - 0.8).abs() < EPSILON);
+
+        assert_eq!(Vec2::ZERO.try_normalize(), None);
+        assert_eq!(Vec2::ZERO.normalize_or_zero(), Vec2::ZERO);
+
+        assert!(Vec2::new(f32::NAN, 1.0).try_normalize().is_none());
+        assert!(Vec2::new(f32::INFINITY, 1.0).try_normalize().is_none());
+    }
+
+    #[test]
+    fn indexing() {
+        let mut v = Vec2::new(1.0, 2.0);
+
+        assert_eq!(v[0], 1.0);
+        assert_eq!(v[1], 2.0);
+
+        v[0] = 5.0;
+
+        assert_eq!(v.x, 5.0);
+    }
+}

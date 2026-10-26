@@ -203,3 +203,107 @@ impl IndexMut<usize> for Vec3 {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EPSILON: f32 = 1e-6;
+
+    #[test]
+    fn constructors() {
+        assert_eq!(Vec3::ZERO, Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(Vec3::ONE, Vec3::splat(1.0));
+        assert_eq!(Vec3::X, Vec3::new(1.0, 0.0, 0.0));
+        assert_eq!(Vec3::NEG_Z, Vec3::new(0.0, 0.0, -1.0));
+        assert_eq!(Vec3::splat(2.0).to_array(), [2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn arithmetic() {
+        let a = Vec3::new(2.0, 4.0, 6.0);
+        let b = Vec3::new(1.0, 2.0, 3.0);
+
+        assert_eq!(a + b, Vec3::new(3.0, 6.0, 9.0));
+        assert_eq!(a - b, b);
+        assert_eq!(-a, Vec3::new(-2.0, -4.0, -6.0));
+
+        assert_eq!(a * 2.0, Vec3::new(4.0, 8.0, 12.0));
+        assert_eq!(2.0 * a, Vec3::new(4.0, 8.0, 12.0));
+        assert_eq!(a / 2.0, b);
+
+        assert_eq!(a * b, Vec3::new(2.0, 8.0, 18.0));
+        assert_eq!(a / b, Vec3::splat(2.0));
+
+        let mut c = a;
+        c += b;
+        c -= b;
+        c *= 2.0;
+        c /= 2.0;
+
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn cross_product() {
+        assert_eq!(Vec3::X.cross(Vec3::Y), Vec3::Z);
+        assert_eq!(Vec3::Y.cross(Vec3::X), Vec3::NEG_Z);
+        assert_eq!(Vec3::X.cross(Vec3::X), Vec3::ZERO);
+
+        let a = Vec3::new(1.0, 2.0, 3.0);
+        let b = Vec3::new(4.0, 5.0, 6.0);
+
+        let cross = a.cross(b);
+
+        assert_eq!(cross, Vec3::new(-3.0, 6.0, -3.0));
+
+        assert_eq!(cross.dot(a), 0.0);
+        assert_eq!(cross.dot(b), 0.0);
+
+        assert_eq!(a.cross(b), -b.cross(a));
+    }
+
+    #[test]
+    fn geometry() {
+        let a = Vec3::ZERO;
+        let b = Vec3::new(3.0, 4.0, 0.0);
+
+        assert_eq!(b.length(), 5.0);
+        assert_eq!(b.length_squared(), 25.0);
+        assert_eq!(b.dot(Vec3::X), 3.0);
+
+        assert_eq!(a.distance(b), 5.0);
+        assert_eq!(b.distance(a), 5.0);
+        assert_eq!(a.distance_squared(b), 25.0);
+    }
+
+    #[test]
+    fn normalization() {
+        let v = Vec3::new(3.0, 4.0, 0.0);
+
+        let normalized = v.normalize();
+
+        assert!((normalized.length() - 1.0).abs() < EPSILON);
+        assert!((normalized.x - 0.6).abs() < EPSILON);
+        assert!((normalized.y - 0.8).abs() < EPSILON);
+
+        assert_eq!(Vec3::ZERO.try_normalize(), None);
+        assert_eq!(Vec3::ZERO.normalize_or_zero(), Vec3::ZERO);
+
+        assert!(Vec3::new(f32::NAN, 0.0, 0.0).try_normalize().is_none());
+        assert!(Vec3::new(f32::INFINITY, 0.0, 0.0).try_normalize().is_none());
+    }
+
+    #[test]
+    fn indexing() {
+        let mut v = Vec3::new(1.0, 2.0, 3.0);
+
+        assert_eq!(v[0], 1.0);
+        assert_eq!(v[1], 2.0);
+        assert_eq!(v[2], 3.0);
+
+        v[2] = 10.0;
+
+        assert_eq!(v.z, 10.0);
+    }
+}
