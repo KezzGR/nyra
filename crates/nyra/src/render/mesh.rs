@@ -27,7 +27,7 @@ impl Mesh {
         let mut indices = Vec::with_capacity(36);
 
         let axes: [Vec3; 3] = [Vec3::X, Vec3::Y, Vec3::Z];
-        let uves: [[f32; 2]; 4] = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
+        let uves: [[f32; 2]; 4] = [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]];
 
         let half_size = size / 2.0;
 

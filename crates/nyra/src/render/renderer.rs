@@ -32,10 +32,6 @@ const CLEAR_COLOR: Color = Color {
     a: 1.0,
 };
 
-const PIXELS: &[u8; 16] = &[
-    255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
-];
-
 pub struct Renderer {
     window: Arc<Window>,
     surface: Surface<'static>,
@@ -211,11 +207,15 @@ impl Renderer {
             cache: None,
         });
 
+        let image = image::open("assets/test.png").expect("").to_rgba8();
+
+        let (width, height) = image.dimensions();
+
         let texture = device.create_texture(&TextureDescriptor {
             label: Some("Texture"),
             size: Extent3d {
-                width: 2,
-                height: 2,
+                width: width,
+                height: height,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -252,15 +252,15 @@ impl Renderer {
                 origin: Origin3d::ZERO,
                 aspect: TextureAspect::All,
             },
-            PIXELS,
+            image.as_raw(),
             TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(8),
-                rows_per_image: Some(2),
+                bytes_per_row: Some(width * 4),
+                rows_per_image: Some(height),
             },
             Extent3d {
-                width: 2,
-                height: 2,
+                width: width,
+                height: height,
                 depth_or_array_layers: 1,
             },
         );
