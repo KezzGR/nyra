@@ -10,14 +10,15 @@ use std::{
 pub use thing::Thing;
 pub use thing_id::ThingID;
 
-use crate::{Material, MaterialID, Mesh};
+use crate::{Material, MaterialID, Mesh, MeshID};
 
 #[derive(Default)]
 pub struct World {
     pub things: Vec<Thing>,
-    pub mesh_storage: Vec<Mesh>,
+    pub mesh_storage: HashMap<MeshID, Mesh>,
     pub material_storage: HashMap<MaterialID, Material>,
     next_id: u64,
+    next_mesh_id: u64,
     next_material_id: u64,
 }
 
@@ -33,10 +34,14 @@ impl World {
         id
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh) -> usize {
-        self.mesh_storage.push(mesh);
+    pub fn add_mesh(&mut self, mesh: Mesh) -> MeshID {
+        let id = MeshID(self.next_mesh_id);
 
-        self.mesh_storage.len() - 1
+        self.next_mesh_id += 1;
+
+        self.mesh_storage.insert(id, mesh);
+
+        id
     }
 
     pub fn add_material(&mut self, material: Material) -> MaterialID {

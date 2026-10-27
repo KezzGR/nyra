@@ -1,15 +1,15 @@
-use crate::{MaterialID, ThingID, Transform};
+use crate::{MaterialID, MeshID, ThingID, Transform};
 
 pub struct Thing {
     pub transform: Transform,
-    pub mesh_id: usize,
+    pub mesh_id: MeshID,
     pub id: ThingID,
     pub visible: bool,
     pub material: Option<MaterialID>,
 }
 
 impl Thing {
-    pub fn new(transform: Transform, mesh_id: usize) -> Self {
+    pub fn new(transform: Transform, mesh_id: MeshID) -> Self {
         Self {
             transform,
             mesh_id,

@@ -18,7 +18,7 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    MaterialID, MaterialUniform, ThingID,
+    MaterialID, MaterialUniform, MeshID, ThingID,
     render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
@@ -41,7 +41,7 @@ pub struct Renderer {
     transform_bind_group_layout: BindGroupLayout,
     material_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
-    gpu_meshes: Vec<GpuMesh>,
+    gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
 }
@@ -191,7 +191,7 @@ impl Renderer {
             transform_bind_group_layout,
             material_bind_group_layout,
             pipeline,
-            gpu_meshes: Vec::default(),
+            gpu_meshes: HashMap::default(),
             gpu_things: HashMap::default(),
             gpu_materials: HashMap::default(),
         }
@@ -276,7 +276,10 @@ impl Renderer {
                     continue;
                 };
 
-                let gpu_mesh = &self.gpu_meshes[thing.mesh_id];
+                let gpu_mesh = self
+                    .gpu_meshes
+                    .get(&thing.mesh_id)
+                    .expect("GpuMesh missing after synchronization");
 
                 let gpu_thing = self
                     .gpu_things
@@ -353,8 +356,13 @@ impl Renderer {
     }
 
     fn sync_meshes(&mut self, world: &World) {
-        for mesh in world.mesh_storage.iter().skip(self.gpu_meshes.len()) {
-            self.gpu_meshes.push(GpuMesh::new(mesh, &self.device));
+        self.gpu_meshes
+            .retain(|id, _| world.mesh_storage.contains_key(id));
+
+        for (id, mesh) in &world.mesh_storage {
+            self.gpu_meshes
+                .entry(*id)
+                .or_insert_with(|| GpuMesh::new(mesh, &self.device));
         }
     }
 

@@ -16,6 +16,7 @@ pub use crate::cursor_state::CursorState;
 pub use crate::game_context::GameContext;
 pub use crate::input::Input;
 pub use crate::mouse::Mouse;
+pub use crate::render::MeshID;
 pub use crate::render::material::Material;
 pub use crate::render::material_id::MaterialID;
 pub use crate::render::mesh::Mesh;
