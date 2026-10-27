@@ -10,16 +10,18 @@ use std::{
 pub use thing::Thing;
 pub use thing_id::ThingID;
 
-use crate::{Material, MaterialID, Mesh, MeshID};
+use crate::{Material, MaterialID, Mesh, MeshID, Texture, TextureID};
 
 #[derive(Default)]
 pub struct World {
     pub things: Vec<Thing>,
     pub mesh_storage: HashMap<MeshID, Mesh>,
     pub material_storage: HashMap<MaterialID, Material>,
+    pub texture_storage: HashMap<TextureID, Texture>,
     next_id: u64,
     next_mesh_id: u64,
     next_material_id: u64,
+    next_texture_id: u64,
 }
 
 impl World {
@@ -50,6 +52,16 @@ impl World {
         self.next_material_id += 1;
 
         self.material_storage.insert(id, material);
+
+        id
+    }
+
+    pub fn add_texture(&mut self, texture: Texture) -> TextureID {
+        let id = TextureID(self.next_texture_id);
+
+        self.next_texture_id += 1;
+
+        self.texture_storage.insert(id, texture);
 
         id
     }

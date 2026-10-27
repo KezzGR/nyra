@@ -1,12 +1,15 @@
 pub mod camera;
 pub mod gpu_material;
 pub mod gpu_mesh;
+pub mod gpu_texture;
 pub mod gpu_thing;
 pub mod material;
 pub mod material_id;
 pub mod mesh;
 pub mod mesh_id;
 pub mod renderer;
+pub mod texture;
+pub mod texture_id;
 pub mod uniform;
 pub mod vertex;
 
@@ -16,5 +19,7 @@ pub use gpu_mesh::GpuMesh;
 pub use gpu_thing::GpuThing;
 pub use mesh::Mesh;
 pub use mesh_id::MeshID;
+pub use texture::Texture;
+pub use texture_id::TextureID;
 pub use uniform::TransformUniform;
 pub use vertex::Vertex;

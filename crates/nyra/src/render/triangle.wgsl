@@ -25,5 +25,5 @@ struct MaterialUniform {
     let normal_dir = normalize(normal);
     let light_dir = normalize(vec3<f32>(1.0, 4.0, 0.0));
     let lambert = max(0, dot(normal_dir, light_dir));
-    return textureSample(texture, color_sampler, uv);
+    return textureSample(texture, color_sampler, uv) * material.base_color * lambert;
 }

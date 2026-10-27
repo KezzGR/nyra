@@ -3,24 +3,23 @@ use std::{
     sync::Arc,
 };
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BufferBindingType, Color, ColorTargetState,
-    ColorWrites, CommandEncoderDescriptor, CompareFunction, CurrentSurfaceTexture, DepthBiasState,
-    DepthStencilState, Device, DeviceDescriptor, ExperimentalFeatures, Extent3d, Features,
-    FragmentState, IndexFormat, Instance, Limits, LoadOp, MemoryHints, MultisampleState,
-    Operations, Origin3d, PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, RequestAdapterOptions, SamplerBindingType, ShaderModuleDescriptor,
-    ShaderSource, ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration,
-    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureSampleType, TextureUsages, TextureView,
-    TextureViewDescriptor, TextureViewDimension, Trace, VertexState, wgt::SamplerDescriptor,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
+    BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
+    CompareFunction, CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device,
+    DeviceDescriptor, ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat,
+    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations, Origin3d,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
+    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
+    SamplerBindingType, ShaderModuleDescriptor, ShaderSource, ShaderStages, StencilState, StoreOp,
+    Surface, SurfaceConfiguration, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages,
+    TextureView, TextureViewDescriptor, TextureViewDimension, Trace, VertexState,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    MaterialID, MaterialUniform, MeshID, ThingID,
+    GpuTexture, MaterialID, MaterialUniform, MeshID, TextureID, ThingID,
     render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
@@ -38,15 +37,16 @@ pub struct Renderer {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
-    depth_texture: Texture,
+    depth_texture: wgpu::Texture,
     depth_view: TextureView,
     transform_bind_group_layout: BindGroupLayout,
     material_bind_group_layout: BindGroupLayout,
-    texture_bind_group: BindGroup,
+    texture_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
+    gpu_textures: HashMap<TextureID, GpuTexture>,
 }
 
 impl Renderer {
@@ -207,64 +207,6 @@ impl Renderer {
             cache: None,
         });
 
-        let image = image::open("assets/test.png").expect("").to_rgba8();
-
-        let (width, height) = image.dimensions();
-
-        let texture = device.create_texture(&TextureDescriptor {
-            label: Some("Texture"),
-            size: Extent3d {
-                width: width,
-                height: height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        let view = texture.create_view(&TextureViewDescriptor::default());
-
-        let sampler = device.create_sampler(&SamplerDescriptor::default());
-
-        let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Texture Bind Group"),
-            layout: &texture_bind_group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::TextureView(&view),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::Sampler(&sampler),
-                },
-            ],
-        });
-
-        queue.write_texture(
-            TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            image.as_raw(),
-            TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(width * 4),
-                rows_per_image: Some(height),
-            },
-            Extent3d {
-                width: width,
-                height: height,
-                depth_or_array_layers: 1,
-            },
-        );
-
         Self {
             window,
             surface,
@@ -275,11 +217,12 @@ impl Renderer {
             depth_view,
             transform_bind_group_layout,
             material_bind_group_layout,
-            texture_bind_group,
+            texture_bind_group_layout,
             pipeline,
             gpu_meshes: HashMap::default(),
             gpu_things: HashMap::default(),
             gpu_materials: HashMap::default(),
+            gpu_textures: HashMap::default(),
         }
     }
 
@@ -287,6 +230,7 @@ impl Renderer {
         self.sync_meshes(world);
         self.sync_things(world);
         self.sync_materials(world);
+        self.sync_textures(world);
 
         let mut needs_reconfigure = false;
 
@@ -358,7 +302,34 @@ impl Renderer {
                     continue;
                 }
 
-                let Some(material) = &thing.material else {
+                let mut material_id: &MaterialID;
+
+                if let Some(material) = &thing.material {
+                    material_id = material;
+
+                    if let Some(texture) = &world
+                        .material_storage
+                        .get(material)
+                        .expect("Texture missing")
+                        .texture_id
+                    {
+                        let gpu_texture = self
+                            .gpu_textures
+                            .get(texture)
+                            .expect("GpuTexture missing after synchronization");
+
+                        render_pass.set_bind_group(2, Some(&gpu_texture.bind_group), &[]);
+                    } else {
+                        render_pass.set_bind_group(
+                            2,
+                            Some(
+                                &GpuTexture::default(&self.device, &self.texture_bind_group_layout)
+                                    .bind_group,
+                            ),
+                            &[],
+                        );
+                    }
+                } else {
                     continue;
                 };
 
@@ -374,7 +345,7 @@ impl Renderer {
 
                 let gpu_material = self
                     .gpu_materials
-                    .get(material)
+                    .get(material_id)
                     .expect("GpuMaterial missing after synchronization");
 
                 render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
@@ -392,7 +363,6 @@ impl Renderer {
                 render_pass.set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
                 render_pass.set_bind_group(0, Some(&gpu_thing.uniform_bind_group), &[]);
-                render_pass.set_bind_group(2, Some(&self.texture_bind_group), &[]);
                 render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
             }
         }
@@ -478,6 +448,42 @@ impl Renderer {
                 &gpu_material.uniform_buffer,
                 0,
                 bytemuck::bytes_of(&MaterialUniform::new(material.base_color)),
+            );
+        }
+    }
+
+    fn sync_textures(&mut self, world: &World) {
+        self.gpu_textures
+            .retain(|id, _| world.texture_storage.contains_key(id));
+
+        for (id, texture) in &world.texture_storage {
+            let gpu_texture = self.gpu_textures.entry(*id).or_insert_with(|| {
+                GpuTexture::new(
+                    texture.width,
+                    texture.height,
+                    &self.device,
+                    &self.texture_bind_group_layout,
+                )
+            });
+
+            self.queue.write_texture(
+                TexelCopyTextureInfo {
+                    texture: &gpu_texture.wgpu_texture,
+                    mip_level: 0,
+                    origin: Origin3d::ZERO,
+                    aspect: TextureAspect::All,
+                },
+                texture.image.as_raw(),
+                TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(texture.width * 4),
+                    rows_per_image: Some(texture.height),
+                },
+                Extent3d {
+                    width: texture.width,
+                    height: texture.height,
+                    depth_or_array_layers: 1,
+                },
             );
         }
     }
