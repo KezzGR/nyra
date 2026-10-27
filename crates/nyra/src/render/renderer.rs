@@ -19,7 +19,7 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    GpuTexture, MaterialID, MaterialUniform, MeshID, TextureID, ThingID,
+    GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID,
     render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
@@ -30,8 +30,6 @@ const CLEAR_COLOR: Color = Color {
     b: 0.035,
     a: 1.0,
 };
-
-const NONE_GPU_TEXTURE: &[u8; 4] = &[255, 255, 255, 255];
 
 pub struct Renderer {
     window: Arc<Window>,
@@ -210,27 +208,10 @@ impl Renderer {
             cache: None,
         });
 
-        let none_gpu_texture = GpuTexture::new(1, 1, &device, &texture_bind_group_layout);
+        let none_texture = Texture::default();
 
-        queue.write_texture(
-            TexelCopyTextureInfo {
-                texture: &none_gpu_texture.wgpu_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            NONE_GPU_TEXTURE,
-            TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4),
-                rows_per_image: Some(1),
-            },
-            Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-        );
+        let none_gpu_texture =
+            GpuTexture::new(&none_texture, &device, &queue, &texture_bind_group_layout);
 
         Self {
             window,
@@ -328,7 +309,7 @@ impl Renderer {
                     continue;
                 }
 
-                let mut material_id: &MaterialID;
+                let material_id: &MaterialID;
 
                 if let Some(material) = &thing.material {
                     material_id = material;
@@ -476,34 +457,14 @@ impl Renderer {
             .retain(|id, _| world.texture_storage.contains_key(id));
 
         for (id, texture) in &world.texture_storage {
-            let gpu_texture = self.gpu_textures.entry(*id).or_insert_with(|| {
+            self.gpu_textures.entry(*id).or_insert_with(|| {
                 GpuTexture::new(
-                    texture.width,
-                    texture.height,
+                    texture,
                     &self.device,
+                    &self.queue,
                     &self.texture_bind_group_layout,
                 )
             });
-
-            self.queue.write_texture(
-                TexelCopyTextureInfo {
-                    texture: &gpu_texture.wgpu_texture,
-                    mip_level: 0,
-                    origin: Origin3d::ZERO,
-                    aspect: TextureAspect::All,
-                },
-                texture.image.as_raw(),
-                TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(texture.width * 4),
-                    rows_per_image: Some(texture.height),
-                },
-                Extent3d {
-                    width: texture.width,
-                    height: texture.height,
-                    depth_or_array_layers: 1,
-                },
-            );
         }
     }
 }

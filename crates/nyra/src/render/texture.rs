@@ -21,3 +21,13 @@ impl Texture {
         }
     }
 }
+
+impl Default for Texture {
+    fn default() -> Self {
+        Self {
+            image: ImageBuffer::from_pixel(1, 1, Rgba([255, 255, 255, 255])),
+            width: 1,
+            height: 1,
+        }
+    }
+}
