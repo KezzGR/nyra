@@ -1,62 +1,52 @@
 # Nyra 🦀
 
-I'm building my own 3D game engine in Rust.
+Nyra is a small, experimental 3D game engine I'm building in Rust.
 
-Why? Mostly because I wanted to understand how game engines actually work instead of just using one.
+I started it because I wanted to understand how game engines work under the hood, not just learn how to use one. It began with a triangle, then a cube, and somehow turned into a renderer, a world system, and a math library of my own.
 
-It started with a triangle. Then a cube. Then a camera, an input system, a basic world, and a bunch of other things I didn't know how to write a few weeks ago.
+It's still early, and the API changes whenever I find a better way to do something.
 
-The cube has friends now. And they move.
+![100 cubes moving in a wave](assets/cube-wave.gif)
 
-![Nyra cube wave demo](assets/cube-wave.gif)
+*100 animated cubes sharing one mesh. No instancing yet.*
 
-*100 cubes sharing one mesh, moving in a sine wave.*
-
-## Getting Started
-
-Clone the repository:
+## Getting started
 
 ```bash
 git clone https://github.com/KezzGR/nyra.git
 cd nyra
+cargo run -p nyra --example materials
 ```
 
-Run the cube wave example:
+Other examples:
 
-```bash
-cargo run -p nyra --example cube_wave
-```
+| Example | What it shows |
+| --- | --- |
+| `world` | Creating, moving, and accessing objects |
+| `cube_wave` | Animating 100 objects that share a mesh and material |
+| `delete_objects` | Removing objects and changing their visibility |
+| `materials` | Different colors and shared material resources |
+| `input_test` | Basic keyboard input |
 
-There are a few other examples too:
+Run any of them with `cargo run -p nyra --example <name>`.
 
-```bash
-cargo run -p nyra --example world
-cargo run -p nyra --example camera_move
-cargo run -p nyra --example delete_objects
-```
+In examples with the free-fly camera, use **WASD** to move and the **mouse** to look around. Press **Escape** to release the cursor, then click the window to capture it again.
 
-In examples using the free-fly camera, use **WASD** to move and the **mouse** to look around. Press **Escape** to release the cursor and click to capture it again.
+## What works
 
-In `delete_objects`, **Space** removes cubes and **Enter** cycles through hiding them.
+- **Rendering:** 3D meshes through `wgpu`, perspective projection, depth testing, and basic directional lighting.
+- **Procedural geometry:** cubes and cuboids, with meshes that can be shared by multiple objects.
+- **Materials:** solid RGBA base colors, shared `MaterialID` references, and GPU material buffers that can be updated while the application runs. Transparency is not implemented yet.
+- **World:** spawning, accessing, moving, hiding, and despawning objects using `ThingID`.
+- **Application and input:** a managed `winit` event loop, keyboard and mouse input, delta time, and a free-fly camera.
+- **Math:** Nyra uses its own `nyra_math` crate for vectors, quaternions, matrices, transforms, and camera calculations instead of `glam`.
 
-## What Works So Far
+## A small example
 
-Nyra can render basic 3D geometry using `wgpu`. There's perspective projection, depth buffering, simple directional lighting, and support for drawing multiple objects using the same mesh.
-
-So far I've written procedural generators for cubes and cuboids. Nothing fancy yet, but I'm planning to add more shapes.
-
-There's also a small world system. You can spawn objects, move or rotate them, hide them, and remove them entirely. Each object gets its own `ThingID`, so you don't have to rely on its position in a vector.
-
-The camera supports free movement with the mouse and keyboard. Input handling includes key presses, releases, held keys, mouse movement, and cursor locking.
-
-I've also been working on making the API less annoying to use. You don't need to deal with the window or event loop yourself just to put a cube on the screen.
-
-## A Small Example
-
-Here's a cube that moves upward:
+This creates a cube with a material and moves it upward every frame:
 
 ```rust
-use nyra::{App, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, Material, Mesh, RunError, Thing, ThingID, Transform};
 
 struct GameState {
     cube: ThingID,
@@ -66,60 +56,46 @@ fn main() -> Result<(), RunError> {
     App::<GameState>::new()
         .setup(|game| {
             let mesh = game.world.add_mesh(Mesh::cube());
+            let material = game.world.add_material(Material::default());
 
             let cube = game.world.spawn(
                 Thing::new(Transform::default(), mesh)
+                    .with_material(material),
             );
 
             GameState { cube }
         })
         .run_with_state(|game, state| {
-            game.world[state.cube].transform.position.y +=
-                game.delta_time;
+            game.world[state.cube].transform.position.y += game.delta_time;
         })
 }
 ```
 
-`setup()` runs once and returns whatever state your game needs. `run_with_state()` receives that state every frame.
+`setup()` runs once and returns the application's state. `run_with_state()` receives that state every frame. For applications that don't need a separate state, there's also `App::run()`.
 
-For simpler applications, you can skip the state entirely and just use `App::run()`.
+A `Thing` without a material is currently skipped by the mesh render pipeline. `Material::default()` is an ordinary material and must be assigned explicitly.
 
-Objects can also be accessed with `world.get()` and `world.get_mut()` if you don't want to panic when an ID no longer exists.
+See [the examples](crates/nyra/examples) for more.
 
-The [cube wave example](crates/nyra/examples/cube_wave.rs) shows a slightly more interesting use of the world API.
+## Project structure
 
-## Project Structure
+This workspace currently contains two crates:
 
-There are currently two crates:
+- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, camera, input, and GPU resource management.
+- **[`nyra_math`](crates/nyra_math)**: my own math implementations, including `Vec2`, `Vec3`, `Quat`, `Mat4`, and view/projection calculations, with tests for mathematical operations.
 
-- **`nyra`** contains the renderer, application loop, world, camera, input, and the rest of the engine.
-- **`nyra_math`** is where I'm experimenting with my own math implementations. Right now it mainly contains a custom `Vec3`.
+## What's missing
 
-I'm still using `glam` for some of the engine's math, particularly camera and transform calculations.
+Quite a lot. There are no textures, imported 3D models, physically based materials, shadows, physics, skeletal animation, or editor yet. Lighting is still hard-coded in the shader, and the renderer uses one basic mesh pipeline.
 
-## What's Missing?
+New meshes can be uploaded at runtime, but editing an already uploaded mesh doesn't currently update its GPU copy. There's no instanced rendering yet, and performance hasn't been systematically benchmarked.
 
-A lot, honestly.
+For now I'm focused on learning, keeping the engine understandable, and building up the features needed to make a small game with it.
 
-There are no materials, textures, physics, model loading, or proper animation system yet. There's no editor either.
+## Built with
 
-Meshes can be added while the game is running, and the renderer will upload them to the GPU. However, changing the vertices of an existing mesh won't update its GPU copy yet.
-
-Rendering is also pretty basic. There's no instancing, and I haven't really started optimizing things.
-
-The API is still changing quite often, usually whenever I try to build something with it and realize that my previous design was inconvenient.
-
-For now, I'm mostly trying to get the fundamentals right and learn how all of this works.
-
-## Built With
-
-- Rust
-- `wgpu`
-- `winit`
-- `glam`
-- `bytemuck`
-- `pollster`
+Rust · [`wgpu`](https://github.com/gfx-rs/wgpu) · [`winit`](https://github.com/rust-windowing/winit) · `bytemuck` · `pollster` · `nyra_math`
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
