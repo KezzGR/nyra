@@ -3,17 +3,19 @@ use std::{
     sync::Arc,
 };
 use wgpu::{
-    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
-    BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
-    CompareFunction, CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device,
-    DeviceDescriptor, ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat,
-    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
-    PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
-    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
-    ShaderModuleDescriptor, ShaderSource, ShaderStages, StencilState, StoreOp, Surface,
-    SurfaceConfiguration, Texture, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor, Trace, VertexState,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingResource, BindingType, BufferBindingType, Color, ColorTargetState,
+    ColorWrites, CommandEncoderDescriptor, CompareFunction, CurrentSurfaceTexture, DepthBiasState,
+    DepthStencilState, Device, DeviceDescriptor, ExperimentalFeatures, Extent3d, Features,
+    FragmentState, IndexFormat, Instance, Limits, LoadOp, MemoryHints, MultisampleState,
+    Operations, Origin3d, PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference,
+    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, RequestAdapterOptions, SamplerBindingType, ShaderModuleDescriptor,
+    ShaderSource, ShaderStages, StencilState, StoreOp, Surface, SurfaceConfiguration,
+    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureSampleType, TextureUsages, TextureView,
+    TextureViewDescriptor, TextureViewDimension, Trace, VertexState, wgt::SamplerDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -30,6 +32,10 @@ const CLEAR_COLOR: Color = Color {
     a: 1.0,
 };
 
+const PIXELS: &[u8; 16] = &[
+    255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
+];
+
 pub struct Renderer {
     window: Arc<Window>,
     surface: Surface<'static>,
@@ -40,6 +46,7 @@ pub struct Renderer {
     depth_view: TextureView,
     transform_bind_group_layout: BindGroupLayout,
     material_bind_group_layout: BindGroupLayout,
+    texture_bind_group: BindGroup,
     pipeline: RenderPipeline,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
@@ -131,6 +138,29 @@ impl Renderer {
                 }],
             });
 
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("Texture Bind Group Layout"),
+                entries: &[
+                    BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: BindingType::Texture {
+                            sample_type: TextureSampleType::Float { filterable: true },
+                            view_dimension: TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Triangle Shader"),
             source: ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
@@ -141,6 +171,7 @@ impl Renderer {
             bind_group_layouts: &[
                 Some(&transform_bind_group_layout),
                 Some(&material_bind_group_layout),
+                Some(&texture_bind_group_layout),
             ],
             immediate_size: 0,
         });
@@ -180,6 +211,60 @@ impl Renderer {
             cache: None,
         });
 
+        let texture = device.create_texture(&TextureDescriptor {
+            label: Some("Texture"),
+            size: Extent3d {
+                width: 2,
+                height: 2,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Rgba8UnormSrgb,
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        let view = texture.create_view(&TextureViewDescriptor::default());
+
+        let sampler = device.create_sampler(&SamplerDescriptor::default());
+
+        let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Texture Bind Group"),
+            layout: &texture_bind_group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: BindingResource::TextureView(&view),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::Sampler(&sampler),
+                },
+            ],
+        });
+
+        queue.write_texture(
+            TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
+            },
+            PIXELS,
+            TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(8),
+                rows_per_image: Some(2),
+            },
+            Extent3d {
+                width: 2,
+                height: 2,
+                depth_or_array_layers: 1,
+            },
+        );
+
         Self {
             window,
             surface,
@@ -190,6 +275,7 @@ impl Renderer {
             depth_view,
             transform_bind_group_layout,
             material_bind_group_layout,
+            texture_bind_group,
             pipeline,
             gpu_meshes: HashMap::default(),
             gpu_things: HashMap::default(),
@@ -306,6 +392,7 @@ impl Renderer {
                 render_pass.set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
                 render_pass.set_bind_group(0, Some(&gpu_thing.uniform_bind_group), &[]);
+                render_pass.set_bind_group(2, Some(&self.texture_bind_group), &[]);
                 render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
             }
         }

@@ -6,11 +6,16 @@ use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, Ver
 pub struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
+    uv: [f32; 2],
 }
 
 impl Vertex {
-    pub fn new(position: [f32; 3], normal: [f32; 3]) -> Self {
-        Self { position, normal }
+    pub fn new(position: [f32; 3], normal: [f32; 3], uv: [f32; 2]) -> Self {
+        Self {
+            position,
+            normal,
+            uv,
+        }
     }
 
     pub fn layout() -> VertexBufferLayout<'static> {
@@ -27,6 +32,11 @@ impl Vertex {
                     format: VertexFormat::Float32x3,
                     offset: 12,
                     shader_location: 1,
+                },
+                VertexAttribute {
+                    format: VertexFormat::Float32x2,
+                    offset: 24,
+                    shader_location: 2,
                 },
             ],
         }

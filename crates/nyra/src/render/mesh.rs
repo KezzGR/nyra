@@ -26,7 +26,9 @@ impl Mesh {
         let mut vertices = Vec::with_capacity(24);
         let mut indices = Vec::with_capacity(36);
 
-        let axes = [Vec3::X, Vec3::Y, Vec3::Z];
+        let axes: [Vec3; 3] = [Vec3::X, Vec3::Y, Vec3::Z];
+        let uves: [[f32; 2]; 4] = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
+
         let half_size = size / 2.0;
 
         for normal_axis_index in 0..axes.len() {
@@ -43,13 +45,16 @@ impl Mesh {
 
                 let first_vertex_index = vertices.len() as u32;
 
-                for position in [
+                for (position, uv) in [
                     face_center - half_edge_a - oriented_half_edge_b,
                     face_center + half_edge_a - oriented_half_edge_b,
                     face_center + half_edge_a + oriented_half_edge_b,
                     face_center - half_edge_a + oriented_half_edge_b,
-                ] {
-                    vertices.push(Vertex::new(position.to_array(), face_normal.to_array()));
+                ]
+                .iter()
+                .zip(uves)
+                {
+                    vertices.push(Vertex::new(position.to_array(), face_normal.to_array(), uv));
                 }
 
                 indices.extend_from_slice(&[
