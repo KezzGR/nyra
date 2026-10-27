@@ -50,8 +50,4 @@ impl GpuTexture {
             bind_group,
         }
     }
-
-    pub fn default(device: &Device, layout: &BindGroupLayout) -> Self {
-        Self::new(1, 1, device, layout)
-    }
 }

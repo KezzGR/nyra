@@ -31,6 +31,8 @@ const CLEAR_COLOR: Color = Color {
     a: 1.0,
 };
 
+const NONE_GPU_TEXTURE: &[u8; 4] = &[255, 255, 255, 255];
+
 pub struct Renderer {
     window: Arc<Window>,
     surface: Surface<'static>,
@@ -43,6 +45,7 @@ pub struct Renderer {
     material_bind_group_layout: BindGroupLayout,
     texture_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
+    none_gpu_texture: GpuTexture,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
@@ -207,6 +210,28 @@ impl Renderer {
             cache: None,
         });
 
+        let none_gpu_texture = GpuTexture::new(1, 1, &device, &texture_bind_group_layout);
+
+        queue.write_texture(
+            TexelCopyTextureInfo {
+                texture: &none_gpu_texture.wgpu_texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
+            },
+            NONE_GPU_TEXTURE,
+            TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4),
+                rows_per_image: Some(1),
+            },
+            Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+        );
+
         Self {
             window,
             surface,
@@ -219,6 +244,7 @@ impl Renderer {
             material_bind_group_layout,
             texture_bind_group_layout,
             pipeline,
+            none_gpu_texture,
             gpu_meshes: HashMap::default(),
             gpu_things: HashMap::default(),
             gpu_materials: HashMap::default(),
@@ -320,14 +346,7 @@ impl Renderer {
 
                         render_pass.set_bind_group(2, Some(&gpu_texture.bind_group), &[]);
                     } else {
-                        render_pass.set_bind_group(
-                            2,
-                            Some(
-                                &GpuTexture::default(&self.device, &self.texture_bind_group_layout)
-                                    .bind_group,
-                            ),
-                            &[],
-                        );
+                        render_pass.set_bind_group(2, Some(&self.none_gpu_texture.bind_group), &[]);
                     }
                 } else {
                     continue;
