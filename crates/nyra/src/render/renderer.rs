@@ -43,7 +43,7 @@ pub struct Renderer {
     material_bind_group_layout: BindGroupLayout,
     texture_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
-    none_gpu_texture: GpuTexture,
+    fallback_texture: GpuTexture,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_things: HashMap<ThingID, GpuThing>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
@@ -88,22 +88,8 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
-        let depth_texture = device.create_texture(&TextureDescriptor {
-            label: Some("Depth Texture"),
-            size: Extent3d {
-                width: config.width.max(1),
-                height: config.height.max(1),
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Depth32Float,
-            usage: TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[TextureFormat::Depth32Float],
-        });
-
-        let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
+        let (depth_texture, depth_view) =
+            Renderer::create_depth_resources(&device, size.width.max(1), size.height.max(1));
 
         let transform_bind_group_layout =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
@@ -208,10 +194,12 @@ impl Renderer {
             cache: None,
         });
 
-        let none_texture = Texture::default();
-
-        let none_gpu_texture =
-            GpuTexture::new(&none_texture, &device, &queue, &texture_bind_group_layout);
+        let fallback_texture = GpuTexture::new(
+            &Texture::default(),
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        );
 
         Self {
             window,
@@ -225,7 +213,7 @@ impl Renderer {
             material_bind_group_layout,
             texture_bind_group_layout,
             pipeline,
-            none_gpu_texture,
+            fallback_texture,
             gpu_meshes: HashMap::default(),
             gpu_things: HashMap::default(),
             gpu_materials: HashMap::default(),
@@ -268,7 +256,7 @@ impl Renderer {
             }
         };
 
-        let view = frame.texture.create_view(&TextureViewDescriptor::default());
+        let surface_view = frame.texture.create_view(&TextureViewDescriptor::default());
 
         let mut encoder = self
             .device
@@ -277,7 +265,7 @@ impl Renderer {
         {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view: &surface_view,
                     depth_slice: None,
                     resolve_target: None,
                     ops: Operations {
@@ -296,11 +284,11 @@ impl Renderer {
                 ..Default::default()
             });
 
-            let view = camera.view_matrix();
-            let projection =
+            let view_matrix = camera.view_matrix();
+            let projection_matrix =
                 camera.projection_matrix(self.config.width as f32 / self.config.height as f32);
 
-            let projection_view = projection * view;
+            let projection_view = projection_matrix * view_matrix;
 
             render_pass.set_pipeline(&self.pipeline);
 
@@ -327,7 +315,7 @@ impl Renderer {
 
                         render_pass.set_bind_group(2, Some(&gpu_texture.bind_group), &[]);
                     } else {
-                        render_pass.set_bind_group(2, Some(&self.none_gpu_texture.bind_group), &[]);
+                        render_pass.set_bind_group(2, Some(&self.fallback_texture.bind_group), &[]);
                     }
                 } else {
                     continue;
@@ -385,11 +373,26 @@ impl Renderer {
         self.config.width = size.width;
         self.config.height = size.height;
 
-        self.depth_texture = self.device.create_texture(&TextureDescriptor {
+        self.update_depth_resources();
+
+        self.surface.configure(&self.device, &self.config);
+    }
+
+    fn reconfigure_surface(&self) {
+        self.surface.configure(&self.device, &self.config);
+        self.window.request_redraw();
+    }
+
+    fn create_depth_resources(
+        device: &Device,
+        width: u32,
+        height: u32,
+    ) -> (wgpu::Texture, TextureView) {
+        let depth_texture = device.create_texture(&TextureDescriptor {
             label: Some("Depth Texture"),
             size: Extent3d {
-                width: self.config.width.max(1),
-                height: self.config.height.max(1),
+                width,
+                height,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -400,16 +403,21 @@ impl Renderer {
             view_formats: &[TextureFormat::Depth32Float],
         });
 
-        self.depth_view = self
-            .depth_texture
-            .create_view(&TextureViewDescriptor::default());
+        let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
-        self.surface.configure(&self.device, &self.config);
+        (depth_texture, depth_view)
     }
 
-    fn reconfigure_surface(&self) {
-        self.surface.configure(&self.device, &self.config);
-        self.window.request_redraw();
+    fn update_depth_resources(&mut self) {
+        let (depth_texture, depth_view) = Renderer::create_depth_resources(
+            &self.device,
+            self.config.width.max(1),
+            self.config.height.max(1),
+        );
+
+        self.depth_texture = depth_texture;
+
+        self.depth_view = depth_view;
     }
 
     fn sync_meshes(&mut self, assets: &Assets) {
