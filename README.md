@@ -15,7 +15,7 @@ It's still early, and the API changes whenever I find a better way to do somethi
 ```bash
 git clone https://github.com/KezzGR/nyra.git
 cd nyra
-cargo run -p nyra --example materials
+cargo run -p nyra --example textures
 ```
 
 Other examples:
@@ -26,6 +26,7 @@ Other examples:
 | `cube_wave` | Animating 100 objects that share a mesh and material |
 | `delete_objects` | Removing objects and changing their visibility |
 | `materials` | Different colors and shared material resources |
+| `textures` | Loading a PNG texture and reusing it across materials |
 | `input_test` | Basic keyboard input |
 
 Run any of them with `cargo run -p nyra --example <name>`.
@@ -35,10 +36,11 @@ In examples with the free-fly camera, use **WASD** to move and the **mouse** to 
 ## What works
 
 - **Rendering:** 3D meshes through `wgpu`, perspective projection, depth testing, and basic directional lighting.
-- **Procedural geometry:** cubes and cuboids, with meshes that can be shared by multiple objects.
-- **Materials:** solid RGBA base colors, shared `MaterialID` references, and GPU material buffers that can be updated while the application runs. Transparency is not implemented yet.
+- **Procedural geometry:** cubes and cuboids, with meshes that can be shared by multiple objects. Newly added meshes can be uploaded while the application runs.
+- **Assets:** meshes, materials, and textures are stored separately from world objects in `Assets` and referenced by `MeshID`, `MaterialID`, and `TextureID`.
+- **Materials and textures:** RGBA base colors, PNG texture loading, textured materials, and reuse of the same texture across multiple materials. Material colors can be updated at runtime. Transparency is not implemented yet.
 - **World:** spawning, accessing, moving, hiding, and despawning objects using `ThingID`.
-- **Application and input:** a managed `winit` event loop, keyboard and mouse input, delta time, and a free-fly camera.
+- **Application and input:** a managed `winit` event loop, keyboard and mouse input, delta time, cursor control, window focus checks, and a free-fly camera.
 - **Math:** Nyra uses its own `nyra_math` crate for vectors, quaternions, matrices, transforms, and camera calculations instead of `glam`.
 
 ## A small example
@@ -55,8 +57,8 @@ struct GameState {
 fn main() -> Result<(), RunError> {
     App::<GameState>::new()
         .setup(|game| {
-            let mesh = game.world.add_mesh(Mesh::cube());
-            let material = game.world.add_material(Material::default());
+            let mesh = game.assets.add_mesh(Mesh::cube());
+            let material = game.assets.add_material(Material::default());
 
             let cube = game.world.spawn(
                 Thing::new(Transform::default(), mesh)
@@ -81,21 +83,19 @@ See [the examples](crates/nyra/examples) for more.
 
 This workspace currently contains two crates:
 
-- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, camera, input, and GPU resource management.
+- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, asset storage, camera, input, and GPU resource management.
 - **[`nyra_math`](crates/nyra_math)**: my own math implementations, including `Vec2`, `Vec3`, `Quat`, `Mat4`, and view/projection calculations, with tests for mathematical operations.
 
 ## What's missing
 
-Quite a lot. There are no textures, imported 3D models, physically based materials, shadows, physics, skeletal animation, or editor yet. Lighting is still hard-coded in the shader, and the renderer uses one basic mesh pipeline.
+There are no imported 3D models, physically based materials, shadows, physics, skeletal animation, or editor yet. Lighting is still hard-coded in the shader, and the renderer uses one basic mesh pipeline.
 
-New meshes can be uploaded at runtime, but editing an already uploaded mesh doesn't currently update its GPU copy. There's no instanced rendering yet, and performance hasn't been systematically benchmarked.
-
-For now I'm focused on learning, keeping the engine understandable, and building up the features needed to make a small game with it.
+New meshes and textures can be uploaded at runtime, but editing an already uploaded mesh or texture doesn't currently refresh its GPU copy. There's no instanced rendering yet, and performance hasn't been systematically benchmarked.
 
 ## Built with
 
-Rust · [`wgpu`](https://github.com/gfx-rs/wgpu) · [`winit`](https://github.com/rust-windowing/winit) · `bytemuck` · `pollster` · `nyra_math`
+Rust · [`wgpu`](https://github.com/gfx-rs/wgpu) · [`winit`](https://github.com/rust-windowing/winit) · [`image`](https://github.com/image-rs/image) · `bytemuck` · `pollster` · `nyra_math`
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT.
