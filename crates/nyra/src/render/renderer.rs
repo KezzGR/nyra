@@ -7,19 +7,19 @@ use wgpu::{
     BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
     CompareFunction, CurrentSurfaceTexture, DepthBiasState, DepthStencilState, Device,
     DeviceDescriptor, ExperimentalFeatures, Extent3d, Features, FragmentState, IndexFormat,
-    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations, Origin3d,
+    Instance, Limits, LoadOp, MemoryHints, MultisampleState, Operations,
     PipelineCompilationOptions, PipelineLayoutDescriptor, PowerPreference, PrimitiveState,
     PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
     SamplerBindingType, ShaderModuleDescriptor, ShaderSource, ShaderStages, StencilState, StoreOp,
-    Surface, SurfaceConfiguration, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages,
-    TextureView, TextureViewDescriptor, TextureViewDimension, Trace, VertexState,
+    Surface, SurfaceConfiguration, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
+    Trace, VertexState,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID,
+    Assets, GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID,
     render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
     world::World,
 };
@@ -233,11 +233,11 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, camera: &Camera, world: &World) {
-        self.sync_meshes(world);
+    pub fn render(&mut self, camera: &Camera, world: &World, assets: &Assets) {
         self.sync_things(world);
-        self.sync_materials(world);
-        self.sync_textures(world);
+        self.sync_meshes(assets);
+        self.sync_materials(assets);
+        self.sync_textures(assets);
 
         let mut needs_reconfigure = false;
 
@@ -314,10 +314,10 @@ impl Renderer {
                 if let Some(material) = &thing.material {
                     material_id = material;
 
-                    if let Some(texture) = &world
+                    if let Some(texture) = &assets
                         .material_storage
                         .get(material)
-                        .expect("Texture missing")
+                        .expect("Material missing")
                         .texture_id
                     {
                         let gpu_texture = self
@@ -412,11 +412,11 @@ impl Renderer {
         self.window.request_redraw();
     }
 
-    fn sync_meshes(&mut self, world: &World) {
+    fn sync_meshes(&mut self, assets: &Assets) {
         self.gpu_meshes
-            .retain(|id, _| world.mesh_storage.contains_key(id));
+            .retain(|id, _| assets.mesh_storage.contains_key(id));
 
-        for (id, mesh) in &world.mesh_storage {
+        for (id, mesh) in &assets.mesh_storage {
             self.gpu_meshes
                 .entry(*id)
                 .or_insert_with(|| GpuMesh::new(mesh, &self.device));
@@ -435,11 +435,11 @@ impl Renderer {
         }
     }
 
-    fn sync_materials(&mut self, world: &World) {
+    fn sync_materials(&mut self, assets: &Assets) {
         self.gpu_materials
-            .retain(|id, _| world.material_storage.contains_key(id));
+            .retain(|id, _| assets.material_storage.contains_key(id));
 
-        for (id, material) in &world.material_storage {
+        for (id, material) in &assets.material_storage {
             let gpu_material = self.gpu_materials.entry(*id).or_insert_with(|| {
                 GpuMaterial::new(&self.device, &self.material_bind_group_layout)
             });
@@ -452,11 +452,11 @@ impl Renderer {
         }
     }
 
-    fn sync_textures(&mut self, world: &World) {
+    fn sync_textures(&mut self, assets: &Assets) {
         self.gpu_textures
-            .retain(|id, _| world.texture_storage.contains_key(id));
+            .retain(|id, _| assets.texture_storage.contains_key(id));
 
-        for (id, texture) in &world.texture_storage {
+        for (id, texture) in &assets.texture_storage {
             self.gpu_textures.entry(*id).or_insert_with(|| {
                 GpuTexture::new(
                     texture,

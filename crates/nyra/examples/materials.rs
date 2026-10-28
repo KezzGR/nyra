@@ -10,11 +10,11 @@ fn main() -> Result<(), RunError> {
 
     App::<MaterialsDemo>::new()
         .setup(|game| {
-            let mesh = game.world.add_mesh(Mesh::cube());
+            let mesh = game.assets.add_mesh(Mesh::cube());
 
-            let pink = game.world.add_material(Material::new(PINK));
-            let blue = game.world.add_material(Material::new(BLUE));
-            let green = game.world.add_material(Material::new(GREEN));
+            let pink = game.assets.add_material(Material::new(PINK));
+            let blue = game.assets.add_material(Material::new(BLUE));
+            let green = game.assets.add_material(Material::new(GREEN));
 
             let materials = [None, Some(pink), Some(blue), Some(green), Some(pink)];
 

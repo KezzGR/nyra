@@ -1,4 +1,4 @@
-use crate::{Cursor, Input, Mouse, render::Camera, world::World};
+use crate::{Assets, Cursor, Input, Mouse, render::Camera, world::World};
 
 pub struct GameContext<'a> {
     pub input: &'a Input,
@@ -6,5 +6,6 @@ pub struct GameContext<'a> {
     pub cursor: Cursor<'a>,
     pub camera: &'a mut Camera,
     pub world: &'a mut World,
+    pub assets: &'a mut Assets,
     pub delta_time: f32,
 }

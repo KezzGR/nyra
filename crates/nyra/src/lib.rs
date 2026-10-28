@@ -1,4 +1,5 @@
 mod app;
+mod assets;
 mod controllers;
 mod cursor;
 mod cursor_state;
@@ -10,6 +11,7 @@ mod time;
 mod world;
 
 pub use crate::app::App;
+pub use crate::assets::Assets;
 pub use crate::controllers::FreeFlyController;
 pub use crate::cursor::Cursor;
 pub use crate::cursor_state::CursorState;

@@ -10,9 +10,9 @@ fn main() -> Result<(), RunError> {
         .setup(|game| {
             let center = (GRID_DIM as f32 - 1.0) / 2.0;
 
-            let mesh_id = game.world.add_mesh(Mesh::cube());
+            let mesh_id = game.assets.add_mesh(Mesh::cube());
 
-            let material_id = game.world.add_material(Material::default());
+            let material_id = game.assets.add_material(Material::default());
 
             let mut cubes = Vec::default();
 

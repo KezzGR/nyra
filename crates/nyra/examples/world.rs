@@ -6,9 +6,9 @@ fn main() -> Result<(), RunError> {
 
     App::new()
         .setup(|game| {
-            let mesh_id = game.world.add_mesh(Mesh::cube());
+            let mesh_id = game.assets.add_mesh(Mesh::cube());
 
-            let material_id = game.world.add_material(Material::default());
+            let material_id = game.assets.add_material(Material::default());
 
             let left_cube_transform = Transform::new(Vec3::X * -3.0, Quat::IDENTITY, Vec3::ONE);
             let right_cube_transform = Transform::new(Vec3::X * 3.0, Quat::IDENTITY, Vec3::ONE);

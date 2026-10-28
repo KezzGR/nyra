@@ -10,19 +10,19 @@ fn main() -> Result<(), RunError> {
 
     App::<MaterialsDemo>::new()
         .setup(|game| {
-            let mesh = game.world.add_mesh(Mesh::cube());
+            let mesh = game.assets.add_mesh(Mesh::cube());
 
             let texture = Texture::from_file("assets/cat.png");
-            let texture_id = game.world.add_texture(texture);
+            let texture_id = game.assets.add_texture(texture);
 
             let pink = game
-                .world
+                .assets
                 .add_material(Material::new(PINK).with_texture(texture_id));
             let blue = game
-                .world
+                .assets
                 .add_material(Material::new(BLUE).with_texture(texture_id));
             let green = game
-                .world
+                .assets
                 .add_material(Material::new(GREEN).with_texture(texture_id));
 
             let materials = [None, Some(pink), Some(blue), Some(green), Some(pink)];

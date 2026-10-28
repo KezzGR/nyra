@@ -11,8 +11,8 @@ use winit::{
 };
 
 use crate::{
-    Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform, render::Camera,
-    world::World,
+    Assets, Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform,
+    render::Camera, world::World,
 };
 
 pub struct App<S = ()> {
@@ -27,6 +27,7 @@ pub struct App<S = ()> {
     time: Time,
     cursor_state: CursorState,
     world: World,
+    assets: Assets,
 }
 
 impl App<()> {
@@ -84,6 +85,7 @@ impl<S> Default for App<S> {
             time: Default::default(),
             cursor_state: Default::default(),
             world: Default::default(),
+            assets: Default::default(),
         }
     }
 }
@@ -118,6 +120,7 @@ impl<S> ApplicationHandler for App<S> {
                 mouse: &self.mouse,
                 camera: &mut self.camera,
                 world: &mut self.world,
+                assets: &mut self.assets,
                 cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                 delta_time: 0.0,
             }));
@@ -149,6 +152,7 @@ impl<S> ApplicationHandler for App<S> {
                             mouse: &self.mouse,
                             camera: &mut self.camera,
                             world: &mut self.world,
+                            assets: &mut self.assets,
                             cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                             delta_time: dt,
                         },
@@ -159,7 +163,7 @@ impl<S> ApplicationHandler for App<S> {
                 self.mouse.end_frame();
 
                 if let Some(renderer) = self.renderer.as_mut() {
-                    renderer.render(&self.camera, &self.world);
+                    renderer.render(&self.camera, &self.world, &self.assets);
                 }
 
                 if let Some(window) = self.window.as_mut() {

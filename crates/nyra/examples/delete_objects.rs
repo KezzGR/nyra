@@ -9,9 +9,9 @@ fn main() -> Result<(), RunError> {
 
     App::<DeleteObjects>::new()
         .setup(|game| {
-            let mesh_id = game.world.add_mesh(Mesh::cube());
+            let mesh_id = game.assets.add_mesh(Mesh::cube());
 
-            let material_id = game.world.add_material(Material::default());
+            let material_id = game.assets.add_material(Material::default());
 
             let mut cubes = Vec::default();
 
