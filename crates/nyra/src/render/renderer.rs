@@ -159,12 +159,12 @@ impl Renderer {
             });
 
         let shader = device.create_shader_module(ShaderModuleDescriptor {
-            label: Some("Triangle Shader"),
-            source: ShaderSource::Wgsl(include_str!("triangle.wgsl").into()),
+            label: Some("Mesh Shader"),
+            source: ShaderSource::Wgsl(include_str!("mesh.wgsl").into()),
         });
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: Some("Triangle Pipeline Layout"),
+            label: Some("Mesh Pipeline Layout"),
             bind_group_layouts: &[
                 Some(&transform_bind_group_layout),
                 Some(&material_bind_group_layout),
@@ -174,7 +174,7 @@ impl Renderer {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("Triangle Pipeline"),
+            label: Some("Mesh Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
