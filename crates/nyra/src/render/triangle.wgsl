@@ -24,6 +24,8 @@ struct MaterialUniform {
 @fragment fn fs_main(@location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let normal_dir = normalize(normal);
     let light_dir = normalize(vec3<f32>(1.0, 4.0, 0.0));
-    let lambert = max(0, dot(normal_dir, light_dir));
-    return textureSample(texture, color_sampler, uv) * material.base_color * lambert;
+    let lambert = max(0.0, dot(normal_dir, light_dir));
+    let brightness = 0.1 + 0.9 * lambert;
+    let albedo = textureSample(texture, color_sampler, uv) * material.base_color;
+    return vec4<f32>(albedo.rgb * brightness, albedo.a);
 }
