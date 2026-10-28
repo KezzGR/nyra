@@ -1,11 +1,12 @@
-pub mod thing;
-pub mod thing_id;
-pub mod transform;
+mod thing;
+mod thing_id;
+mod transform;
 
 use std::ops::{Index, IndexMut};
 
 pub use thing::Thing;
 pub use thing_id::ThingID;
+pub use transform::Transform;
 
 #[derive(Default)]
 pub struct World {
