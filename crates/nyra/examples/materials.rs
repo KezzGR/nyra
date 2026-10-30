@@ -8,8 +8,8 @@ const GREEN: [f32; 4] = [0.34, 0.79, 0.56, 1.0];
 fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
 
-    App::<MaterialsDemo>::new()
-        .setup(|game| {
+    App::new()
+        .setup_with_state(|game| {
             let mesh = game.assets.add_mesh(Mesh::cube());
 
             let pink = game.assets.add_material(Material::new(PINK));
@@ -34,7 +34,7 @@ fn main() -> Result<(), RunError> {
 
             MaterialsDemo { cubes, time: 0.0 }
         })
-        .run_with_state(move |game, state| {
+        .run_each_frame_with_state(move |game, state| {
             controller.update(game);
 
             state.time += game.delta_time;

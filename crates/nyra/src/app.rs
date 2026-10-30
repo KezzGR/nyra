@@ -31,7 +31,19 @@ pub struct App<S = ()> {
 }
 
 impl App<()> {
-    pub fn run<F>(mut self, mut update: F) -> Result<(), EventLoopError>
+    pub fn setup<F>(mut self, setup: F) -> Self
+    where
+        F: FnOnce(&mut GameContext) + 'static,
+    {
+        self.setup = Some(Box::new(setup));
+        self
+    }
+
+    pub fn run(self) -> Result<(), EventLoopError> {
+        self.run_each_frame(|_| {})
+    }
+
+    pub fn run_each_frame<F>(mut self, mut update: F) -> Result<(), EventLoopError>
     where
         F: FnMut(&mut GameContext) + 'static,
     {
@@ -39,7 +51,7 @@ impl App<()> {
             self.setup = Some(Box::new(|_| {}));
         }
 
-        self.run_with_state(move |game, _state| {
+        self.run_each_frame_with_state(move |game, _state| {
             update(game);
         })
     }
@@ -50,7 +62,7 @@ impl<S> App<S> {
         Self::default()
     }
 
-    pub fn setup<F>(mut self, setup: F) -> Self
+    pub fn setup_with_state<F>(mut self, setup: F) -> Self
     where
         F: FnOnce(&mut GameContext) -> S + 'static,
     {
@@ -58,7 +70,7 @@ impl<S> App<S> {
         self
     }
 
-    pub fn run_with_state<F>(mut self, update: F) -> Result<(), EventLoopError>
+    pub fn run_each_frame_with_state<F>(mut self, update: F) -> Result<(), EventLoopError>
     where
         F: FnMut(&mut GameContext, &mut S) + 'static,
         S: 'static,

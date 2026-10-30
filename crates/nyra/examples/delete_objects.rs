@@ -1,14 +1,13 @@
-use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, FreeFlyController, KeyCode, Material, Mesh, RunError, Thing, ThingID, Transform};
 use nyra_math::{Quat, Vec3};
-use winit::keyboard::KeyCode;
 
 const GRID_DIM: u32 = 10;
 
 fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
 
-    App::<DeleteObjects>::new()
-        .setup(|game| {
+    App::new()
+        .setup_with_state(|game| {
             let mesh_id = game.assets.add_mesh(Mesh::cube());
 
             let material_id = game.assets.add_material(Material::default());
@@ -36,7 +35,7 @@ fn main() -> Result<(), RunError> {
                 previous_cube: None,
             }
         })
-        .run_with_state(move |game, state| {
+        .run_each_frame_with_state(move |game, state| {
             controller.update(game);
 
             if game.input.key_just_pressed(KeyCode::Space) {

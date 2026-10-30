@@ -6,8 +6,8 @@ const GRID_DIM: u32 = 10;
 fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
 
-    App::<CubeWave>::new()
-        .setup(|game| {
+    App::new()
+        .setup_with_state(|game| {
             let center = (GRID_DIM as f32 - 1.0) / 2.0;
 
             let mesh_id = game.assets.add_mesh(Mesh::cube());
@@ -38,7 +38,7 @@ fn main() -> Result<(), RunError> {
                 center,
             }
         })
-        .run_with_state(move |game, state| {
+        .run_each_frame_with_state(move |game, state| {
             controller.update(game);
 
             let mut id: usize = 0;
