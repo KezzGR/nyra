@@ -3,16 +3,21 @@ use nyra_math::{Quat, Vec3};
 
 const GRID_DIM: u32 = 10;
 
+struct CubeWave {
+    cubes: Vec<ThingID>,
+    time: f32,
+    center: f32,
+}
+
 fn main() -> Result<(), RunError> {
     let mut controller = FreeFlyController::default();
 
     App::new()
-        .setup_with_state(|game| {
+        .setup_with_state(|ctx| {
             let center = (GRID_DIM as f32 - 1.0) / 2.0;
 
-            let mesh_id = game.assets.add_mesh(Mesh::cube());
-
-            let material_id = game.assets.add_material(Material::default());
+            let mesh = ctx.assets.add_mesh(Mesh::cube());
+            let material = ctx.assets.add_material(Material::default());
 
             let mut cubes = Vec::default();
 
@@ -24,9 +29,9 @@ fn main() -> Result<(), RunError> {
                         Vec3::splat(0.8),
                     );
 
-                    let cube = game
+                    let cube = ctx
                         .world
-                        .spawn(Thing::new(transform, mesh_id).with_material(material_id));
+                        .spawn(Thing::new(transform, mesh).with_material(material));
 
                     cubes.push(cube);
                 }
@@ -59,10 +64,4 @@ fn main() -> Result<(), RunError> {
                 }
             }
         })
-}
-
-struct CubeWave {
-    cubes: Vec<ThingID>,
-    time: f32,
-    center: f32,
 }
