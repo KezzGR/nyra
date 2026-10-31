@@ -1,8 +1,8 @@
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Device,
-    Extent3d, Origin3d, Queue, SamplerDescriptor, TexelCopyBufferLayout, TexelCopyTextureInfo,
-    TextureAspect, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-    TextureViewDescriptor,
+    AddressMode, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource,
+    Device, Extent3d, Origin3d, Queue, SamplerDescriptor, TexelCopyBufferLayout,
+    TexelCopyTextureInfo, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureViewDescriptor,
 };
 
 use crate::Texture;
@@ -36,7 +36,11 @@ impl GpuTexture {
 
         let view = wgpu_texture.create_view(&TextureViewDescriptor::default());
 
-        let sampler = device.create_sampler(&SamplerDescriptor::default());
+        let sampler = device.create_sampler(&SamplerDescriptor {
+            address_mode_u: AddressMode::Repeat,
+            address_mode_v: AddressMode::Repeat,
+            ..Default::default()
+        });
 
         let bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("Texture Bind Group"),

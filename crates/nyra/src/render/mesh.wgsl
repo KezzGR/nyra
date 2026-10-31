@@ -8,7 +8,9 @@ struct TransformUniform {
     projection_view: mat4x4<f32>
 }
 struct MaterialUniform {
-    base_color: vec4<f32>
+    base_color: vec4<f32>,
+    uv_scale: vec2<f32>,
+    uv_offset: vec2<f32>
 }
 @group(0) @binding(0) var<uniform> transform: TransformUniform;
 @vertex fn vs_main(@location(0) position: vec3<f32>, @location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> VertexOutput {
@@ -26,6 +28,7 @@ struct MaterialUniform {
     let light_dir = normalize(vec3<f32>(1.0, 4.0, 0.0));
     let lambert = max(0.0, dot(normal_dir, light_dir));
     let brightness = 0.1 + 0.9 * lambert;
-    let albedo = textureSample(texture, color_sampler, uv) * material.base_color;
+    let transformed_uv = uv * material.uv_scale + material.uv_offset;
+    let albedo = textureSample(texture, color_sampler, transformed_uv) * material.base_color;
     return vec4<f32>(albedo.rgb * brightness, albedo.a);
 }

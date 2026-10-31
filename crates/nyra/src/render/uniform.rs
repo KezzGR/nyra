@@ -19,11 +19,17 @@ impl TransformUniform {
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 pub struct MaterialUniform {
-    pub base_color: [f32; 4],
+    base_color: [f32; 4],
+    uv_scale: [f32; 2],
+    uv_offset: [f32; 2],
 }
 
 impl MaterialUniform {
-    pub fn new(base_color: [f32; 4]) -> Self {
-        Self { base_color }
+    pub fn new(base_color: [f32; 4], uv_scale: [f32; 2], uv_offset: [f32; 2]) -> Self {
+        Self {
+            base_color,
+            uv_scale,
+            uv_offset,
+        }
     }
 }

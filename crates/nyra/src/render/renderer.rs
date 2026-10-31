@@ -455,7 +455,11 @@ impl Renderer {
             self.queue.write_buffer(
                 &gpu_material.uniform_buffer,
                 0,
-                bytemuck::bytes_of(&MaterialUniform::new(material.base_color)),
+                bytemuck::bytes_of(&MaterialUniform::new(
+                    material.base_color,
+                    material.uv_scale.to_array(),
+                    material.uv_offset.to_array(),
+                )),
             );
         }
     }
