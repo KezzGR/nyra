@@ -10,7 +10,12 @@ fn main() -> Result<(), RunError> {
         .setup_with_state(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cuboid(Vec3::new(2.0, 4.0, 1.0)));
 
-            let texture = ctx.assets.add_texture(Texture::from_file("assets/cat.png"));
+            let cat_texture = Texture::from_file("assets/cat.png").unwrap_or_else(|error| {
+                eprintln!("Failed to load assets/cat.png: {error}");
+                Texture::default()
+            });
+
+            let texture = ctx.assets.add_texture(cat_texture);
 
             let original = ctx.assets.add_material(
                 Material::new([1.0; 4])

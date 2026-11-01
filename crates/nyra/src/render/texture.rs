@@ -1,4 +1,6 @@
-use image::{ImageBuffer, Rgba};
+use std::path::Path;
+
+use image::{ImageBuffer, ImageError, Rgba};
 
 pub struct Texture {
     pub image: ImageBuffer<Rgba<u8>, Vec<u8>>,
@@ -7,18 +9,16 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn from_file(path: &str) -> Self {
-        let image = image::open(path)
-            .expect("Failed to load texture")
-            .to_rgba8();
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, ImageError> {
+        let image = image::open(path)?.to_rgba8();
 
         let (width, height) = image.dimensions();
 
-        Self {
+        Ok(Self {
             image,
             width,
             height,
-        }
+        })
     }
 }
 
