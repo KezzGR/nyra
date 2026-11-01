@@ -1,23 +1,21 @@
 use std::time::Instant;
 
+#[derive(Default)]
 pub struct Time {
-    last_frame: Instant,
+    last_frame: Option<Instant>,
 }
 
 impl Time {
     pub fn delta_time(&mut self) -> f32 {
         let now = Instant::now();
-        let delta_time = (now - self.last_frame).as_secs_f32();
-        self.last_frame = now;
 
-        delta_time
-    }
-}
+        let delta = match self.last_frame {
+            Some(last) => (now - last).as_secs_f32(),
+            None => 0.0,
+        };
 
-impl Default for Time {
-    fn default() -> Self {
-        Self {
-            last_frame: Instant::now(),
-        }
+        self.last_frame = Some(now);
+
+        delta
     }
 }
