@@ -28,6 +28,7 @@ pub struct App<S = ()> {
     cursor_state: CursorState,
     world: World,
     assets: Assets,
+    title: String,
 }
 
 impl App<()> {
@@ -81,6 +82,11 @@ impl<S> App<S> {
 
         event_loop.run_app(&mut self)
     }
+
+    pub fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
+    }
 }
 
 impl<S> Default for App<S> {
@@ -98,6 +104,7 @@ impl<S> Default for App<S> {
             cursor_state: Default::default(),
             world: Default::default(),
             assets: Default::default(),
+            title: String::from("Nyra"),
         }
     }
 }
@@ -110,7 +117,7 @@ impl<S> ApplicationHandler for App<S> {
 
         let window = Arc::new(
             event_loop
-                .create_window(WindowAttributes::default().with_title("Nyra"))
+                .create_window(WindowAttributes::default().with_title(&self.title))
                 .expect("Error when creating the window"),
         );
 
