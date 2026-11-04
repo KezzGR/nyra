@@ -216,6 +216,10 @@ impl<S> ApplicationHandler for App<S> {
                 }
             }
 
+            WindowEvent::Focused(true) => {
+                self.time.reset();
+            }
+
             WindowEvent::Focused(false) => {
                 if let Some(window) = self.window.as_mut() {
                     self.cursor_state.on_escape(&window);

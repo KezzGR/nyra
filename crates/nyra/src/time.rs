@@ -18,4 +18,8 @@ impl Time {
 
         delta
     }
+
+    pub fn reset(&mut self) {
+        self.last_frame = None;
+    }
 }
