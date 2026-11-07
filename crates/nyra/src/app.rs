@@ -29,6 +29,7 @@ pub struct App<S = ()> {
     world: World,
     assets: Assets,
     title: String,
+    exit_requested: bool,
 }
 
 impl App<()> {
@@ -105,6 +106,7 @@ impl<S> Default for App<S> {
             world: Default::default(),
             assets: Default::default(),
             title: String::from("Nyra"),
+            exit_requested: false,
         }
     }
 }
@@ -142,7 +144,13 @@ impl<S> ApplicationHandler for App<S> {
                 assets: &mut self.assets,
                 cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
                 delta_time: 0.0,
+                exit_requested: &mut self.exit_requested,
             }));
+
+            if self.exit_requested {
+                event_loop.exit();
+                return;
+            }
         }
     }
 
@@ -165,19 +173,25 @@ impl<S> ApplicationHandler for App<S> {
                     self.window.as_ref(),
                     self.state.as_mut(),
                 ) {
-                    update(
-                        &mut GameContext {
-                            input: &self.input,
-                            mouse: &self.mouse,
-                            camera: &mut self.camera,
-                            world: &mut self.world,
-                            assets: &mut self.assets,
-                            cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
-                            delta_time: dt,
-                        },
-                        state,
-                    );
+                    let mut ctx = GameContext {
+                        input: &self.input,
+                        mouse: &self.mouse,
+                        camera: &mut self.camera,
+                        world: &mut self.world,
+                        assets: &mut self.assets,
+                        cursor: Cursor::new(window.as_ref(), &mut self.cursor_state),
+                        delta_time: dt,
+                        exit_requested: &mut self.exit_requested,
+                    };
+
+                    update(&mut ctx, state);
+
+                    if self.exit_requested {
+                        event_loop.exit();
+                        return;
+                    }
                 }
+
                 self.input.end_frame();
                 self.mouse.end_frame();
 

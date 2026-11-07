@@ -8,4 +8,12 @@ pub struct GameContext<'a> {
     pub world: &'a mut World,
     pub assets: &'a mut Assets,
     pub delta_time: f32,
+
+    pub(crate) exit_requested: &'a mut bool,
+}
+
+impl GameContext<'_> {
+    pub fn exit(&mut self) {
+        *self.exit_requested = true;
+    }
 }

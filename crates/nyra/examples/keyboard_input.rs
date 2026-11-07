@@ -1,7 +1,7 @@
 use nyra::{App, KeyCode, RunError};
 
 fn main() -> Result<(), RunError> {
-    println!("Press Space or W in the Nyra window.");
+    println!("Space/W: input test | Q: exit");
 
     App::new().run_each_frame(|ctx| {
         if ctx.input.key_just_pressed(KeyCode::Space) {
@@ -14,6 +14,10 @@ fn main() -> Result<(), RunError> {
 
         if ctx.input.key_just_pressed(KeyCode::KeyW) {
             println!("W pressed");
+        }
+
+        if ctx.input.key_just_pressed(KeyCode::KeyQ) {
+            ctx.exit();
         }
     })
 }
