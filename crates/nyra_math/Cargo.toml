@@ -2,5 +2,3 @@
 name = "nyra_math"
 version.workspace = true
 edition.workspace = true
-
-[dependencies]

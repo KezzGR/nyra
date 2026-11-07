@@ -1,11 +1,11 @@
 mod camera;
 mod matrix;
 mod rotation;
-mod vectors;
+mod vector;
 
 pub use camera::projection;
 pub use camera::view;
 pub use matrix::Mat4;
 pub use rotation::Quat;
-pub use vectors::Vec2;
-pub use vectors::Vec3;
+pub use vector::Vec2;
+pub use vector::Vec3;
