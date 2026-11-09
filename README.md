@@ -27,12 +27,15 @@ To explore the other examples, replace `hello_cube` with any name below.
 | Example | What it shows |
 | --- | --- |
 | [`hello_window`](crates/nyra/examples/hello_window.rs) | Open an empty window with `App::new().run()` |
+| [`title`](crates/nyra/examples/title.rs) | Set a custom window title |
 | [`hello_cube`](crates/nyra/examples/hello_cube.rs) | Create a mesh, material, and your first 3D object |
 | [`multiple_objects`](crates/nyra/examples/multiple_objects.rs) | Share the same mesh and material between multiple objects |
 | [`transforms`](crates/nyra/examples/transforms.rs) | Position, rotate, and scale objects |
 | [`materials`](crates/nyra/examples/materials.rs) | Give objects different colors using materials |
 | [`textures`](crates/nyra/examples/textures.rs) | Load a PNG and reuse it with different material colors |
-| [`keyboard_input`](crates/nyra/examples/keyboard_input.rs) | Respond to key presses and releases |
+| [`uv`](crates/nyra/examples/uv.rs) | Tile textures and animate UV offsets |
+| [`light`](crates/nyra/examples/light.rs) | Configure ambient lighting and animate the sun's direction |
+| [`keyboard_input`](crates/nyra/examples/keyboard_input.rs) | Handle key presses and releases, and exit the application |
 | [`free_camera`](crates/nyra/examples/free_camera.rs) | Move around a scene with the free-fly camera |
 | [`animation`](crates/nyra/examples/animation.rs) | Update an object every frame using application state and delta time |
 | [`spawning`](crates/nyra/examples/spawning.rs) | Spawn objects with Space and remove them with Backspace |
@@ -73,7 +76,8 @@ fn main() -> Result<(), RunError> {
         })
         .run_each_frame_with_state(|ctx, state| {
             state.angle += ctx.delta_time;
-            ctx.world[state.cube].transform.rotation = Quat::from_rotation_y(state.angle);
+            ctx.world[state.cube].transform.rotation =
+                Quat::from_rotation_y(state.angle);
         })
 }
 ```
@@ -84,26 +88,68 @@ A `Thing` without a material is currently skipped by the mesh render pipeline. A
 
 ## What works
 
-- **Rendering:** 3D meshes through `wgpu`, perspective projection, depth testing, and basic directional lighting.
-- **Geometry:** built-in cubes and cuboids, user-supplied meshes, and uploading newly added meshes while the application runs.
+- **Rendering:** 3D meshes through `wgpu`, perspective projection, depth testing, and basic directional and ambient lighting.
+- **Geometry:** built-in cubes and cuboids, custom meshes with vertex and index data, and runtime mesh uploads.
 - **Assets:** separate storage for meshes, materials, and textures, referenced by `MeshID`, `MaterialID`, and `TextureID`.
-- **Materials and textures:** RGBA base colors, PNG loading, textured materials, reuse of textures across materials, and runtime material color changes. Transparency is not implemented yet.
-- **World:** spawn, access, move, hide, and despawn objects using `ThingID`.
-- **Application and input:** `winit` event loop, keyboard and mouse input, delta time, cursor control, and a free-fly camera.
+- **Materials:** RGBA base colors, texture assignment, runtime color changes, and UV scale and offset controls.
+- **Textures:** PNG loading, texture reuse across materials, and repeating UV coordinates.
+- **Environment:** configurable sun direction and intensity, along with ambient light intensity. Lighting parameters can be changed every frame.
+- **World:** spawn, access, transform, hide, and despawn objects using `ThingID`.
+- **Application and input:** `winit` event loop, keyboard and mouse input, delta time, cursor control, custom window titles, application exit, and a free-fly camera.
 - **Math:** a separate `nyra_math` crate with vectors, quaternions, matrices, transforms, and camera calculations instead of `glam`.
+
+### Lighting
+
+Lighting is configured through `World.environment`, rather than modifying shader constants:
+
+```rust
+use nyra_math::Vec3;
+
+ctx.world.environment.sun.direction =
+    Vec3::new(1.0, 3.0, 2.0);
+
+ctx.world.environment.sun.intensity = 0.8;
+ctx.world.environment.ambient_intensity = 0.2;
+```
+
+These values can also be modified during frame updates. The [`light`](crates/nyra/examples/light.rs) example demonstrates an animated sun direction.
+
+### UV transforms
+
+Materials support UV scaling and offsets:
+
+```rust
+use nyra::{Material, TextureID};
+use nyra_math::Vec2;
+
+fn tiled_material(texture: TextureID) -> Material {
+    Material::default()
+        .with_texture(texture)
+        .with_uv_scale(Vec2::new(3.0, 2.0))
+        .with_uv_offset(Vec2::new(0.5, 0.0))
+}
+```
+
+UV parameters can be updated at runtime, making simple effects such as scrolling textures possible. See the [`uv`](crates/nyra/examples/uv.rs) example.
 
 ## Project structure
 
-The workspace contains two crates:
+The workspace currently contains two crates:
 
-- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, assets, camera, input, and GPU resource management.
+- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, assets, camera, input, controllers, and GPU resource management.
 - **[`nyra_math`](crates/nyra_math)**: my own implementations of `Vec2`, `Vec3`, `Quat`, `Mat4`, and view/projection math, with tests.
+
+The engine keeps scene objects in `World` and shared resources in `Assets`. The renderer maintains their GPU-side representations and synchronizes them during rendering.
 
 ## What's missing
 
-There is no 3D model importer, PBR, shadows, physics, skeletal animation, or editor yet. Lighting is still hard-coded in the shader, and rendering uses one basic mesh pipeline.
+There is no 3D model importer, PBR, shadows, physics, skeletal animation, or editor yet.
 
-New meshes and textures can be uploaded at runtime, but modifying an already uploaded mesh or texture does not automatically update its GPU copy. There is no instanced rendering yet, and performance has not been systematically benchmarked.
+Lighting currently supports one directional light and ambient illumination. Rendering uses a single basic mesh pipeline, with no transparency or instanced rendering.
+
+New meshes and textures can be uploaded at runtime, but modifying an already uploaded mesh or texture does not automatically update its GPU copy. Material properties and lighting parameters, however, are synchronized every frame.
+
+Performance has not been systematically benchmarked.
 
 ## Built with
 
