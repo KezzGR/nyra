@@ -19,6 +19,8 @@ pub use crate::game_context::GameContext;
 pub use crate::input::Input;
 pub use crate::mouse::Mouse;
 pub use crate::render::Camera;
+pub use crate::render::EnvironmentUniform;
+pub use crate::render::GpuEnvironment;
 pub use crate::render::GpuTexture;
 pub use crate::render::Material;
 pub use crate::render::MaterialID;

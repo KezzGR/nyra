@@ -1,4 +1,5 @@
 mod camera;
+mod gpu_environment;
 mod gpu_material;
 mod gpu_mesh;
 mod gpu_texture;
@@ -14,6 +15,7 @@ mod uniform;
 mod vertex;
 
 pub use camera::Camera;
+pub use gpu_environment::GpuEnvironment;
 pub use gpu_material::GpuMaterial;
 pub use gpu_mesh::GpuMesh;
 pub use gpu_texture::GpuTexture;
@@ -25,6 +27,7 @@ pub use mesh_id::MeshID;
 pub use renderer::Renderer;
 pub use texture::Texture;
 pub use texture_id::TextureID;
+pub use uniform::EnvironmentUniform;
 pub use uniform::MaterialUniform;
 pub use uniform::TransformUniform;
 pub use vertex::Vertex;

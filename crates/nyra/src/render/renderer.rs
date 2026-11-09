@@ -19,7 +19,10 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    Assets, GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID, render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex}, world::World,
+    Assets, EnvironmentUniform, GpuEnvironment, GpuTexture, MaterialID, MaterialUniform, MeshID,
+    Texture, TextureID, ThingID,
+    render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
+    world::World,
 };
 
 const CLEAR_COLOR: Color = Color {
@@ -46,6 +49,7 @@ pub struct Renderer {
     gpu_things: HashMap<ThingID, GpuThing>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
     gpu_textures: HashMap<TextureID, GpuTexture>,
+    gpu_environment: GpuEnvironment,
 }
 
 impl Renderer {
@@ -142,6 +146,21 @@ impl Renderer {
                 ],
             });
 
+        let environment_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("Environment Bind Group Layout"),
+                entries: &[BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Mesh Shader"),
             source: ShaderSource::Wgsl(include_str!("mesh.wgsl").into()),
@@ -153,6 +172,7 @@ impl Renderer {
                 Some(&transform_bind_group_layout),
                 Some(&material_bind_group_layout),
                 Some(&texture_bind_group_layout),
+                Some(&environment_bind_group_layout),
             ],
             immediate_size: 0,
         });
@@ -199,6 +219,8 @@ impl Renderer {
             &texture_bind_group_layout,
         );
 
+        let gpu_environment = GpuEnvironment::new(&device, &environment_bind_group_layout);
+
         Self {
             window,
             surface,
@@ -216,14 +238,16 @@ impl Renderer {
             gpu_things: HashMap::default(),
             gpu_materials: HashMap::default(),
             gpu_textures: HashMap::default(),
+            gpu_environment,
         }
     }
 
     pub fn render(&mut self, camera: &Camera, world: &World, assets: &Assets) {
         self.sync_things(world);
         self.sync_meshes(assets);
-        self.sync_materials(world, assets);
+        self.sync_materials(assets);
         self.sync_textures(assets);
+        self.sync_environment(world);
 
         let mut needs_reconfigure = false;
 
@@ -289,6 +313,8 @@ impl Renderer {
             let projection_view = projection_matrix * view_matrix;
 
             render_pass.set_pipeline(&self.pipeline);
+
+            render_pass.set_bind_group(3, Some(&self.gpu_environment.bind_group), &[]);
 
             for thing in &world.things {
                 if !thing.visible {
@@ -441,28 +467,24 @@ impl Renderer {
         }
     }
 
-    fn sync_materials(&mut self, world: &World, assets: &Assets) {
+    fn sync_materials(&mut self, assets: &Assets) {
         self.gpu_materials
             .retain(|id, _| assets.material_storage.contains_key(id));
 
         for (id, material) in &assets.material_storage {
             let gpu_material = self.gpu_materials.entry(*id).or_insert_with(|| {
-                GpuMaterial::new(
-                    &self.device,
-                    &self.material_bind_group_layout,
-                )
+                GpuMaterial::new(&self.device, &self.material_bind_group_layout)
             });
 
             self.queue.write_buffer(
-            &gpu_material.uniform_buffer,
-            0,
-            bytemuck::bytes_of(&MaterialUniform::new(
-                material.base_color,
-                material.uv_scale.to_array(),
-                material.uv_offset.to_array(),
-                world.environment.sun.direction.to_array(),
-            )),
-        );
+                &gpu_material.uniform_buffer,
+                0,
+                bytemuck::bytes_of(&MaterialUniform::new(
+                    material.base_color,
+                    material.uv_scale.to_array(),
+                    material.uv_offset.to_array(),
+                )),
+            );
         }
     }
 
@@ -480,5 +502,15 @@ impl Renderer {
                 )
             });
         }
+    }
+
+    fn sync_environment(&mut self, world: &World) {
+        self.queue.write_buffer(
+            &self.gpu_environment.uniform_buffer,
+            0,
+            bytemuck::bytes_of(&EnvironmentUniform::new(
+                world.environment.sun.direction.to_array(),
+            )),
+        );
     }
 }

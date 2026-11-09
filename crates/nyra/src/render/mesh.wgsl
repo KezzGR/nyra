@@ -10,7 +10,9 @@ struct TransformUniform {
 struct MaterialUniform {
     base_color: vec4<f32>,
     uv_scale: vec2<f32>,
-    uv_offset: vec2<f32>,
+    uv_offset: vec2<f32>
+}
+struct EnvironmentUniform {
     light_dir: vec3<f32>
 }
 @group(0) @binding(0) var<uniform> transform: TransformUniform;
@@ -24,9 +26,10 @@ struct MaterialUniform {
 @group(1) @binding(0) var<uniform> material: MaterialUniform;
 @group(2) @binding(0) var texture: texture_2d<f32>;
 @group(2) @binding(1) var color_sampler: sampler;
+@group(3) @binding(0) var<uniform> environment: EnvironmentUniform;
 @fragment fn fs_main(@location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let normal_dir = normalize(normal);
-    let light_dir = normalize(material.light_dir);
+    let light_dir = normalize(environment.light_dir);
     let lambert = max(0.0, dot(normal_dir, light_dir));
     let brightness = 0.1 + 0.9 * lambert;
     let transformed_uv = uv * material.uv_scale + material.uv_offset;
