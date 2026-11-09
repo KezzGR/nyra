@@ -10,10 +10,8 @@ fn main() -> Result<(), RunError> {
         .setup_with_state(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cuboid(Vec3::new(2.0, 4.0, 1.0)));
 
-            let cat_texture = Texture::from_file("assets/cat.png").unwrap_or_else(|error| {
-                eprintln!("Failed to load assets/cat.png: {error}");
-                Texture::default()
-            });
+            let cat_texture =
+                Texture::from_file("assets/cat.png").expect("Failed to load assets/cat.png");
 
             let texture = ctx.assets.add_texture(cat_texture);
 
@@ -47,6 +45,6 @@ fn main() -> Result<(), RunError> {
                 .get_mut(&state.material)
                 .unwrap();
 
-            material.uv_offset.x += ctx.delta_time;
+            material.uv_offset.x = (material.uv_offset.x + ctx.delta_time).fract();
         })
 }

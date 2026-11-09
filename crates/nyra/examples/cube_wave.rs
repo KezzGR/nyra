@@ -19,7 +19,7 @@ fn main() -> Result<(), RunError> {
             let mesh = ctx.assets.add_mesh(Mesh::cube());
             let material = ctx.assets.add_material(Material::default());
 
-            let mut cubes = Vec::default();
+            let mut cubes = Vec::with_capacity((GRID_DIM * GRID_DIM) as usize);
 
             for x in 0..GRID_DIM {
                 for z in 0..GRID_DIM {
@@ -46,7 +46,7 @@ fn main() -> Result<(), RunError> {
         .run_each_frame_with_state(move |game, state| {
             controller.update(game);
 
-            let mut id: usize = 0;
+            let mut index: usize = 0;
 
             state.time += game.delta_time;
 
@@ -57,10 +57,10 @@ fn main() -> Result<(), RunError> {
 
                     let distance = (dx * dx + dz * dz).sqrt();
 
-                    game.world[state.cubes[id]].transform.position.y =
+                    game.world[state.cubes[index]].transform.position.y =
                         0.9 * (1.2 * distance - 3.0 * state.time).sin();
 
-                    id += 1;
+                    index += 1;
                 }
             }
         })

@@ -5,7 +5,6 @@ struct SpawnState {
     mesh: MeshID,
     material: MaterialID,
     objects: Vec<ThingID>,
-    next: usize,
 }
 
 fn main() -> Result<(), RunError> {
@@ -16,12 +15,13 @@ fn main() -> Result<(), RunError> {
             mesh: ctx.assets.add_mesh(Mesh::cube()),
             material: ctx.assets.add_material(Material::default()),
             objects: Vec::new(),
-            next: 0,
         })
         .run_each_frame_with_state(|ctx, state| {
             if ctx.input.key_just_pressed(KeyCode::Space) {
-                let x = (state.next % 7) as f32 * 1.3 - 3.9;
-                let z = (state.next / 7) as f32 * 1.5;
+                let index = state.objects.len();
+
+                let x = (index % 7) as f32 * 1.3 - 3.9;
+                let z = (index / 7) as f32 * 1.5;
 
                 let transform = Transform::new(
                     Vec3::new(x, 0.0, z),
@@ -34,7 +34,6 @@ fn main() -> Result<(), RunError> {
                     .spawn(Thing::new(transform, state.mesh).with_material(state.material));
 
                 state.objects.push(id);
-                state.next += 1;
             }
 
             if ctx.input.key_just_pressed(KeyCode::Backspace) {

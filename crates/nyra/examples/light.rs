@@ -1,13 +1,11 @@
-use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, Transform};
 use nyra_math::{Quat, Vec3};
 
-const GRID_DIM: u32 = 10;
 const SUN_SPEED: f32 = 0.5;
+const SUN_HEIGHT: f32 = 1.5;
 
 struct LightDemo {
-    cubes: Vec<ThingID>,
     time: f32,
-    center: f32,
 }
 
 fn main() -> Result<(), RunError> {
@@ -15,62 +13,33 @@ fn main() -> Result<(), RunError> {
 
     App::new()
         .setup_with_state(|ctx| {
-            let center = (GRID_DIM as f32 - 1.0) / 2.0;
-
             let mesh = ctx.assets.add_mesh(Mesh::cube());
             let material = ctx.assets.add_material(Material::default());
 
-            let mut cubes = Vec::new();
+            for (x, rotation) in [(-2.2, -0.6), (0.0, 0.0), (2.2, 0.6)] {
+                let transform = Transform::new(
+                    Vec3::new(x, 0.0, 0.0),
+                    Quat::from_rotation_y(rotation),
+                    Vec3::ONE,
+                );
 
-            for x in 0..GRID_DIM {
-                for z in 0..GRID_DIM {
-                    let transform = Transform::new(
-                        Vec3::new(x as f32 - center, 0.0, z as f32),
-                        Quat::IDENTITY,
-                        Vec3::splat(0.8),
-                    );
-
-                    let cube = ctx
-                        .world
-                        .spawn(Thing::new(transform, mesh).with_material(material));
-
-                    cubes.push(cube);
-                }
+                ctx.world
+                    .spawn(Thing::new(transform, mesh).with_material(material));
             }
 
-            ctx.world.environment.sun.direction = Vec3::new(1.0, 1.5, 0.0);
+            ctx.world.environment.ambient_intensity = 0.2;
+            ctx.world.environment.sun.intensity = 0.8;
+            ctx.world.environment.sun.direction = Vec3::new(1.0, SUN_HEIGHT, 0.0);
 
-            LightDemo {
-                cubes,
-                time: 0.0,
-                center,
-            }
+            LightDemo { time: 0.0 }
         })
-        .run_each_frame_with_state(move |game, state| {
-            controller.update(game);
+        .run_each_frame_with_state(move |ctx, state| {
+            controller.update(ctx);
 
-            state.time += game.delta_time;
+            state.time += ctx.delta_time;
 
-            // Rotate the sun around the Y axis.
             let angle = state.time * SUN_SPEED;
 
-            game.world.environment.sun.direction = Vec3::new(angle.cos(), 1.5, angle.sin());
-
-            // Animate the cube wave.
-            let mut id = 0;
-
-            for x in 0..GRID_DIM {
-                for z in 0..GRID_DIM {
-                    let dx = x as f32 - state.center;
-                    let dz = z as f32 - state.center;
-
-                    let distance = (dx * dx + dz * dz).sqrt();
-
-                    game.world[state.cubes[id]].transform.position.y =
-                        0.9 * (1.2 * distance - 3.0 * state.time).sin();
-
-                    id += 1;
-                }
-            }
+            ctx.world.environment.sun.direction = Vec3::new(angle.cos(), SUN_HEIGHT, angle.sin());
         })
 }
