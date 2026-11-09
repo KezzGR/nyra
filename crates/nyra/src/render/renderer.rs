@@ -19,9 +19,7 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    Assets, GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID,
-    render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
-    world::World,
+    Assets, GpuTexture, MaterialID, MaterialUniform, MeshID, Texture, TextureID, ThingID, render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex}, world::World,
 };
 
 const CLEAR_COLOR: Color = Color {
@@ -224,7 +222,7 @@ impl Renderer {
     pub fn render(&mut self, camera: &Camera, world: &World, assets: &Assets) {
         self.sync_things(world);
         self.sync_meshes(assets);
-        self.sync_materials(assets);
+        self.sync_materials(world, assets);
         self.sync_textures(assets);
 
         let mut needs_reconfigure = false;
@@ -443,24 +441,28 @@ impl Renderer {
         }
     }
 
-    fn sync_materials(&mut self, assets: &Assets) {
+    fn sync_materials(&mut self, world: &World, assets: &Assets) {
         self.gpu_materials
             .retain(|id, _| assets.material_storage.contains_key(id));
 
         for (id, material) in &assets.material_storage {
             let gpu_material = self.gpu_materials.entry(*id).or_insert_with(|| {
-                GpuMaterial::new(&self.device, &self.material_bind_group_layout)
+                GpuMaterial::new(
+                    &self.device,
+                    &self.material_bind_group_layout,
+                )
             });
 
             self.queue.write_buffer(
-                &gpu_material.uniform_buffer,
-                0,
-                bytemuck::bytes_of(&MaterialUniform::new(
-                    material.base_color,
-                    material.uv_scale.to_array(),
-                    material.uv_offset.to_array(),
-                )),
-            );
+            &gpu_material.uniform_buffer,
+            0,
+            bytemuck::bytes_of(&MaterialUniform::new(
+                material.base_color,
+                material.uv_scale.to_array(),
+                material.uv_offset.to_array(),
+                world.environment.sun.direction.to_array(),
+            )),
+        );
         }
     }
 

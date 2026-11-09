@@ -22,14 +22,23 @@ pub struct MaterialUniform {
     base_color: [f32; 4],
     uv_scale: [f32; 2],
     uv_offset: [f32; 2],
+    light_direction: [f32; 3],
+    _padding: f32,
 }
 
 impl MaterialUniform {
-    pub fn new(base_color: [f32; 4], uv_scale: [f32; 2], uv_offset: [f32; 2]) -> Self {
+    pub fn new(
+        base_color: [f32; 4],
+        uv_scale: [f32; 2],
+        uv_offset: [f32; 2],
+        light_direction: [f32; 3],
+    ) -> Self {
         Self {
             base_color,
             uv_scale,
             uv_offset,
+            light_direction,
+            _padding: 0.0,
         }
     }
 }

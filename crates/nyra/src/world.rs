@@ -1,9 +1,13 @@
+mod directional_light;
+mod environment;
 mod thing;
 mod thing_id;
 mod transform;
 
 use std::ops::{Index, IndexMut};
 
+pub use directional_light::DirectionalLight;
+pub use environment::Environment;
 pub use thing::Thing;
 pub use thing_id::ThingID;
 pub use transform::Transform;
@@ -11,6 +15,7 @@ pub use transform::Transform;
 #[derive(Default)]
 pub struct World {
     pub things: Vec<Thing>,
+    pub environment: Environment,
     next_id: u64,
 }
 

@@ -30,6 +30,8 @@ pub use crate::render::Texture;
 pub use crate::render::TextureID;
 pub use crate::render::Vertex;
 pub use crate::time::Time;
+pub use crate::world::DirectionalLight;
+pub use crate::world::Environment;
 pub use crate::world::Thing;
 pub use crate::world::ThingID;
 pub use crate::world::Transform;
