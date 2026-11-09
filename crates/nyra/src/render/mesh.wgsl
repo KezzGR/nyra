@@ -13,7 +13,9 @@ struct MaterialUniform {
     uv_offset: vec2<f32>
 }
 struct EnvironmentUniform {
-    light_dir: vec3<f32>
+    light_dir: vec3<f32>,
+    ambient_intensity: f32,
+    sun_intensity: f32
 }
 @group(0) @binding(0) var<uniform> transform: TransformUniform;
 @vertex fn vs_main(@location(0) position: vec3<f32>, @location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> VertexOutput {
@@ -31,7 +33,7 @@ struct EnvironmentUniform {
     let normal_dir = normalize(normal);
     let light_dir = normalize(environment.light_dir);
     let lambert = max(0.0, dot(normal_dir, light_dir));
-    let brightness = 0.1 + 0.9 * lambert;
+    let brightness = environment.ambient_intensity + environment.sun_intensity * lambert;
     let transformed_uv = uv * material.uv_scale + material.uv_offset;
     let albedo = textureSample(texture, color_sampler, transformed_uv) * material.base_color;
     return vec4<f32>(albedo.rgb * brightness, albedo.a);

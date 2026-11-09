@@ -38,14 +38,18 @@ impl MaterialUniform {
 #[derive(Copy, Clone, Pod, Zeroable)]
 pub struct EnvironmentUniform {
     light_direction: [f32; 3],
-    _padding: f32,
+    ambient_intensity: f32,
+    sun_intensity: f32,
+    _padding: [f32; 3],
 }
 
 impl EnvironmentUniform {
-    pub fn new(light_direction: [f32; 3]) -> Self {
+    pub fn new(light_direction: [f32; 3], ambient_intensity: f32, sun_intensity: f32) -> Self {
         Self {
             light_direction,
-            _padding: 0.0,
+            ambient_intensity,
+            sun_intensity,
+            _padding: [0.0, 0.0, 0.0],
         }
     }
 }

@@ -510,6 +510,8 @@ impl Renderer {
             0,
             bytemuck::bytes_of(&EnvironmentUniform::new(
                 world.environment.sun.direction.to_array(),
+                world.environment.ambient_intensity,
+                world.environment.sun.intensity,
             )),
         );
     }
