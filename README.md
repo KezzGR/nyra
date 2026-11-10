@@ -28,17 +28,17 @@ To explore the other examples, replace `hello_cube` with any name below.
 | --- | --- |
 | [`hello_window`](crates/nyra/examples/hello_window.rs) | Open an empty window with `App::new().run()` |
 | [`title`](crates/nyra/examples/title.rs) | Set a custom window title |
-| [`hello_cube`](crates/nyra/examples/hello_cube.rs) | Create a mesh, material, and your first 3D object |
-| [`multiple_objects`](crates/nyra/examples/multiple_objects.rs) | Share the same mesh and material between multiple objects |
-| [`transforms`](crates/nyra/examples/transforms.rs) | Position, rotate, and scale objects |
-| [`materials`](crates/nyra/examples/materials.rs) | Give objects different colors using materials |
+| [`hello_cube`](crates/nyra/examples/hello_cube.rs) | Create a mesh, material, and your first 3D entity |
+| [`multiple_objects`](crates/nyra/examples/multiple_objects.rs) | Share the same mesh and material between multiple entities |
+| [`transforms`](crates/nyra/examples/transforms.rs) | Position, rotate, and scale entities |
+| [`materials`](crates/nyra/examples/materials.rs) | Give entities different colors using materials |
 | [`textures`](crates/nyra/examples/textures.rs) | Load a PNG and reuse it with different material colors |
 | [`uv`](crates/nyra/examples/uv.rs) | Tile textures and animate UV offsets |
 | [`light`](crates/nyra/examples/light.rs) | Configure ambient lighting and animate the sun's direction |
 | [`keyboard_input`](crates/nyra/examples/keyboard_input.rs) | Handle key presses and releases, and exit the application |
 | [`free_camera`](crates/nyra/examples/free_camera.rs) | Move around a scene with the free-fly camera |
-| [`animation`](crates/nyra/examples/animation.rs) | Update an object every frame using application state and delta time |
-| [`spawning`](crates/nyra/examples/spawning.rs) | Spawn objects with Space and remove them with Backspace |
+| [`animation`](crates/nyra/examples/animation.rs) | Update an entity every frame using application state and delta time |
+| [`spawning`](crates/nyra/examples/spawning.rs) | Spawn entities with Space and remove them with Backspace |
 | [`cube_wave`](crates/nyra/examples/cube_wave.rs) | Animate 100 cubes sharing a mesh and material |
 
 Run any example from the repository root:
@@ -54,11 +54,11 @@ In examples with the free-fly camera, use **WASD** to move and the **mouse** to 
 This creates a cube and rotates it every frame. `setup_with_state()` returns user-defined state, and `run_each_frame_with_state()` receives it on each frame:
 
 ```rust
-use nyra::{App, Material, Mesh, RunError, Thing, ThingID, Transform};
-use nyra_math::Quat;
+use nyra::{App, Entity, EntityID, Material, Mesh, RunError};
+use nyra_math::{Quat, Transform};
 
 struct AnimationState {
-    cube: ThingID,
+    cube: EntityID,
     angle: f32,
 }
 
@@ -69,7 +69,7 @@ fn main() -> Result<(), RunError> {
             let material = ctx.assets.add_material(Material::default());
 
             let cube = ctx.world.spawn(
-                Thing::new(Transform::default(), mesh).with_material(material)
+                Entity::new(Transform::default(), mesh).with_material(material)
             );
 
             AnimationState { cube, angle: 0.0 }
@@ -84,7 +84,7 @@ fn main() -> Result<(), RunError> {
 
 You don't have to use application state. For simpler programs, use `setup()` to initialize a scene and `run()` to display it, or `run_each_frame()` to execute a callback every frame without a separate state.
 
-A `Thing` without a material is currently skipped by the mesh render pipeline. Assign a material explicitly, including when using `Material::default()`.
+An `Entity` without a material is currently skipped by the mesh render pipeline. Assign a material explicitly, including when using `Material::default()`.
 
 ## What works
 
@@ -94,7 +94,7 @@ A `Thing` without a material is currently skipped by the mesh render pipeline. A
 - **Materials:** RGBA base colors, texture assignment, runtime color changes, and UV scale and offset controls.
 - **Textures:** PNG loading, texture reuse across materials, and repeating UV coordinates.
 - **Environment:** configurable sun direction and intensity, along with ambient light intensity. Lighting parameters can be changed every frame.
-- **World:** spawn, access, transform, hide, and despawn objects using `ThingID`.
+- **World:** spawn, access, transform, hide, and despawn entities using `EntityID`.
 - **Application and input:** `winit` event loop, keyboard and mouse input, delta time, cursor control, custom window titles, application exit, and a free-fly camera.
 - **Math:** a separate `nyra_math` crate with vectors, quaternions, matrices, transforms, and camera calculations instead of `glam`.
 
@@ -136,10 +136,10 @@ UV parameters can be updated at runtime, making simple effects such as scrolling
 
 The workspace currently contains two crates:
 
-- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, assets, camera, input, controllers, and GPU resource management.
-- **[`nyra_math`](crates/nyra_math)**: my own implementations of `Vec2`, `Vec3`, `Quat`, `Mat4`, and view/projection math, with tests.
+- **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, assets, camera, input, controllers, and GPU resource management. Scene objects are represented by `Entity` and identified by `EntityID`.
+- **[`nyra_math`](crates/nyra_math)**: my own implementations of `Vec2`, `Vec3`, `Vec4`, `Quat`, `Mat4`, `Transform`, and view/projection math, with tests.
 
-The engine keeps scene objects in `World` and shared resources in `Assets`. The renderer maintains their GPU-side representations and synchronizes them during rendering.
+The engine keeps entities in `World` and shared resources in `Assets`. Each entity has a `nyra_math::Transform` describing its position, rotation, and scale. The renderer maintains GPU-side representations of scene data and synchronizes them during rendering.
 
 ## What's missing
 
