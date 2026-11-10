@@ -1,61 +1,65 @@
 mod directional_light;
+mod entity;
+mod entity_id;
 mod environment;
-mod thing;
-mod thing_id;
 mod transform;
 
 use std::ops::{Index, IndexMut};
 
 pub use directional_light::DirectionalLight;
+pub use entity::Entity;
+pub use entity_id::EntityID;
 pub use environment::Environment;
-pub use thing::Thing;
-pub use thing_id::ThingID;
 pub use transform::Transform;
 
 #[derive(Default)]
 pub struct World {
-    pub things: Vec<Thing>,
+    pub entities: Vec<Entity>,
     pub environment: Environment,
     next_id: u64,
 }
 
 impl World {
-    pub fn spawn(&mut self, mut thing: Thing) -> ThingID {
-        let id = ThingID(self.next_id);
+    pub fn spawn(&mut self, mut entity: Entity) -> EntityID {
+        let id = EntityID(self.next_id);
 
         self.next_id += 1;
-        thing.id = id;
+        entity.id = id;
 
-        self.things.push(thing);
+        self.entities.push(entity);
 
         id
     }
 
-    pub fn despawn(&mut self, thing_id: ThingID) {
-        if let Some(index) = self.things.iter().position(|t| t.id == thing_id) {
-            self.things.remove(index);
+    pub fn despawn(&mut self, entity_id: EntityID) {
+        if let Some(index) = self
+            .entities
+            .iter()
+            .position(|entity| entity.id == entity_id)
+        {
+            self.entities.remove(index);
         }
     }
 
-    pub fn get(&self, id: ThingID) -> Option<&Thing> {
-        self.things.iter().find(|thing| thing.id == id)
+    pub fn get(&self, id: EntityID) -> Option<&Entity> {
+        self.entities.iter().find(|entity| entity.id == id)
     }
 
-    pub fn get_mut(&mut self, id: ThingID) -> Option<&mut Thing> {
-        self.things.iter_mut().find(|thing| thing.id == id)
-    }
-}
-
-impl Index<ThingID> for World {
-    type Output = Thing;
-
-    fn index(&self, index: ThingID) -> &Self::Output {
-        self.get(index).expect("Thing not found")
+    pub fn get_mut(&mut self, id: EntityID) -> Option<&mut Entity> {
+        self.entities.iter_mut().find(|entity| entity.id == id)
     }
 }
 
-impl IndexMut<ThingID> for World {
-    fn index_mut(&mut self, index: ThingID) -> &mut Self::Output {
-        self.get_mut(index).expect("Thing not found")
+impl Index<EntityID> for World {
+    type Output = Entity;
+
+    fn index(&self, index: EntityID) -> &Self::Output {
+        self.get(index).expect("Entity not found")
+    }
+}
+
+impl IndexMut<EntityID> for World {
+    fn index_mut(&mut self, index: EntityID) -> &mut Self::Output {
+        self.get_mut(index).expect("Entity not found")
     }
 }

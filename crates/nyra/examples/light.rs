@@ -1,4 +1,4 @@
-use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, Transform};
+use nyra::{App, Entity, FreeFlyController, Material, Mesh, RunError, Transform};
 use nyra_math::{Quat, Vec3};
 
 const SUN_SPEED: f32 = 0.5;
@@ -24,7 +24,7 @@ fn main() -> Result<(), RunError> {
                 );
 
                 ctx.world
-                    .spawn(Thing::new(transform, mesh).with_material(material));
+                    .spawn(Entity::new(transform, mesh).with_material(material));
             }
 
             ctx.world.environment.ambient_intensity = 0.2;

@@ -1,4 +1,4 @@
-use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, Transform};
+use nyra::{App, Entity, FreeFlyController, Material, Mesh, RunError, Transform};
 use nyra_math::{Quat, Vec3};
 
 fn main() -> Result<(), RunError> {
@@ -14,7 +14,7 @@ fn main() -> Result<(), RunError> {
                     Transform::new(Vec3::new(x, 0.0, z), Quat::from_rotation_y(-0.6), Vec3::ONE);
 
                 ctx.world
-                    .spawn(Thing::new(transform, mesh).with_material(material));
+                    .spawn(Entity::new(transform, mesh).with_material(material));
             }
         })
         .run_each_frame(move |ctx| {

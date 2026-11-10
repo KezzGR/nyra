@@ -1,9 +1,9 @@
 mod camera;
+mod gpu_entity;
 mod gpu_environment;
 mod gpu_material;
 mod gpu_mesh;
 mod gpu_texture;
-mod gpu_thing;
 mod material;
 mod material_id;
 mod mesh;
@@ -15,11 +15,11 @@ mod uniform;
 mod vertex;
 
 pub use camera::Camera;
+pub use gpu_entity::GpuEntity;
 pub use gpu_environment::GpuEnvironment;
 pub use gpu_material::GpuMaterial;
 pub use gpu_mesh::GpuMesh;
 pub use gpu_texture::GpuTexture;
-pub use gpu_thing::GpuThing;
 pub use material::Material;
 pub use material_id::MaterialID;
 pub use mesh::Mesh;

@@ -1,4 +1,4 @@
-use nyra::{App, Material, Mesh, RunError, Thing, Transform};
+use nyra::{App, Entity, Material, Mesh, RunError, Transform};
 use nyra_math::{Quat, Vec3};
 
 fn main() -> Result<(), RunError> {
@@ -23,7 +23,7 @@ fn main() -> Result<(), RunError> {
 
             for transform in transforms {
                 ctx.world
-                    .spawn(Thing::new(transform, mesh).with_material(material));
+                    .spawn(Entity::new(transform, mesh).with_material(material));
             }
         })
         .run()

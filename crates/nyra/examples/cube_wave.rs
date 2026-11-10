@@ -1,10 +1,10 @@
-use nyra::{App, FreeFlyController, Material, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, Entity, EntityID, FreeFlyController, Material, Mesh, RunError, Transform};
 use nyra_math::{Quat, Vec3};
 
 const GRID_DIM: u32 = 10;
 
 struct CubeWave {
-    cubes: Vec<ThingID>,
+    cubes: Vec<EntityID>,
     time: f32,
     center: f32,
 }
@@ -31,7 +31,7 @@ fn main() -> Result<(), RunError> {
 
                     let cube = ctx
                         .world
-                        .spawn(Thing::new(transform, mesh).with_material(material));
+                        .spawn(Entity::new(transform, mesh).with_material(material));
 
                     cubes.push(cube);
                 }

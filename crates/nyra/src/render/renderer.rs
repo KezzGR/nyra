@@ -19,9 +19,9 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    Assets, EnvironmentUniform, GpuEnvironment, GpuTexture, MaterialID, MaterialUniform, MeshID,
-    Texture, TextureID, ThingID,
-    render::{Camera, GpuMaterial, GpuMesh, GpuThing, TransformUniform, Vertex},
+    Assets, EntityID, EnvironmentUniform, GpuEnvironment, GpuTexture, MaterialID, MaterialUniform,
+    MeshID, Texture, TextureID,
+    render::{Camera, GpuEntity, GpuMaterial, GpuMesh, TransformUniform, Vertex},
     world::World,
 };
 
@@ -46,7 +46,7 @@ pub struct Renderer {
     pipeline: RenderPipeline,
     fallback_texture: GpuTexture,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
-    gpu_things: HashMap<ThingID, GpuThing>,
+    gpu_entities: HashMap<EntityID, GpuEntity>,
     gpu_materials: HashMap<MaterialID, GpuMaterial>,
     gpu_textures: HashMap<TextureID, GpuTexture>,
     gpu_environment: GpuEnvironment,
@@ -235,7 +235,7 @@ impl Renderer {
             pipeline,
             fallback_texture,
             gpu_meshes: HashMap::default(),
-            gpu_things: HashMap::default(),
+            gpu_entities: HashMap::default(),
             gpu_materials: HashMap::default(),
             gpu_textures: HashMap::default(),
             gpu_environment,
@@ -243,7 +243,7 @@ impl Renderer {
     }
 
     pub fn render(&mut self, camera: &Camera, world: &World, assets: &Assets) {
-        self.sync_things(world);
+        self.sync_entities(world);
         self.sync_meshes(assets);
         self.sync_materials(assets);
         self.sync_textures(assets);
@@ -316,14 +316,14 @@ impl Renderer {
 
             render_pass.set_bind_group(3, Some(&self.gpu_environment.bind_group), &[]);
 
-            for thing in &world.things {
-                if !thing.visible {
+            for entity in &world.entities {
+                if !entity.visible {
                     continue;
                 }
 
                 let material_id: &MaterialID;
 
-                if let Some(material) = &thing.material {
+                if let Some(material) = &entity.material {
                     material_id = material;
 
                     if let Some(texture) = &assets
@@ -347,13 +347,13 @@ impl Renderer {
 
                 let gpu_mesh = self
                     .gpu_meshes
-                    .get(&thing.mesh_id)
+                    .get(&entity.mesh_id)
                     .expect("GpuMesh missing after synchronization");
 
-                let gpu_thing = self
-                    .gpu_things
-                    .get(&thing.id)
-                    .expect("GpuThing missing after synchronization");
+                let gpu_entity = self
+                    .gpu_entities
+                    .get(&entity.id)
+                    .expect("GpuEntity missing after synchronization");
 
                 let gpu_material = self
                     .gpu_materials
@@ -363,10 +363,10 @@ impl Renderer {
                 render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
 
                 self.queue.write_buffer(
-                    &gpu_thing.uniform_buffer,
+                    &gpu_entity.uniform_buffer,
                     0,
                     bytemuck::bytes_of(&TransformUniform::new(
-                        thing.transform.model_matrix().to_cols_array(),
+                        entity.transform.model_matrix().to_cols_array(),
                         projection_view.to_cols_array(),
                     )),
                 );
@@ -374,7 +374,7 @@ impl Renderer {
                 render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
 
-                render_pass.set_bind_group(0, Some(&gpu_thing.uniform_bind_group), &[]);
+                render_pass.set_bind_group(0, Some(&gpu_entity.uniform_bind_group), &[]);
                 render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
             }
         }
@@ -455,15 +455,15 @@ impl Renderer {
         }
     }
 
-    fn sync_things(&mut self, world: &World) {
-        let alive: HashSet<ThingID> = world.things.iter().map(|thing| thing.id).collect();
+    fn sync_entities(&mut self, world: &World) {
+        let alive: HashSet<EntityID> = world.entities.iter().map(|entity| entity.id).collect();
 
-        self.gpu_things.retain(|id, _| alive.contains(id));
+        self.gpu_entities.retain(|id, _| alive.contains(id));
 
-        for thing in &world.things {
-            self.gpu_things
-                .entry(thing.id)
-                .or_insert_with(|| GpuThing::new(&self.device, &self.transform_bind_group_layout));
+        for entity in &world.entities {
+            self.gpu_entities
+                .entry(entity.id)
+                .or_insert_with(|| GpuEntity::new(&self.device, &self.transform_bind_group_layout));
         }
     }
 

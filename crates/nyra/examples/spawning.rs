@@ -1,10 +1,12 @@
-use nyra::{App, KeyCode, Material, MaterialID, Mesh, MeshID, RunError, Thing, ThingID, Transform};
+use nyra::{
+    App, Entity, EntityID, KeyCode, Material, MaterialID, Mesh, MeshID, RunError, Transform,
+};
 use nyra_math::{Quat, Vec3};
 
 struct SpawnState {
     mesh: MeshID,
     material: MaterialID,
-    objects: Vec<ThingID>,
+    objects: Vec<EntityID>,
 }
 
 fn main() -> Result<(), RunError> {
@@ -31,7 +33,7 @@ fn main() -> Result<(), RunError> {
 
                 let id = ctx
                     .world
-                    .spawn(Thing::new(transform, state.mesh).with_material(state.material));
+                    .spawn(Entity::new(transform, state.mesh).with_material(state.material));
 
                 state.objects.push(id);
             }

@@ -5,12 +5,12 @@ use wgpu::{
 
 use crate::render::TransformUniform;
 
-pub struct GpuThing {
+pub struct GpuEntity {
     pub uniform_buffer: Buffer,
     pub uniform_bind_group: BindGroup,
 }
 
-impl GpuThing {
+impl GpuEntity {
     pub fn new(device: &Device, layout: &BindGroupLayout) -> Self {
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Uniform Buffer"),

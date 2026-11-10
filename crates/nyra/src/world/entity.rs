@@ -1,19 +1,19 @@
-use crate::{MaterialID, MeshID, ThingID, Transform};
+use crate::{EntityID, MaterialID, MeshID, Transform};
 
-pub struct Thing {
+pub struct Entity {
+    pub id: EntityID,
     pub transform: Transform,
     pub mesh_id: MeshID,
-    pub id: ThingID,
     pub visible: bool,
     pub material: Option<MaterialID>,
 }
 
-impl Thing {
+impl Entity {
     pub fn new(transform: Transform, mesh_id: MeshID) -> Self {
         Self {
             transform,
             mesh_id,
-            id: ThingID(0),
+            id: EntityID(0),
             visible: true,
             material: None,
         }

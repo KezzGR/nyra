@@ -1,2 +1,2 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ThingID(pub u64);
+pub struct EntityID(pub u64);

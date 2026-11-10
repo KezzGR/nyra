@@ -1,4 +1,4 @@
-use nyra::{App, Material, MaterialID, Mesh, RunError, Texture, Thing, Transform};
+use nyra::{App, Entity, Material, MaterialID, Mesh, RunError, Texture, Transform};
 use nyra_math::{Quat, Vec2, Vec3};
 
 struct State {
@@ -33,7 +33,7 @@ fn main() -> Result<(), RunError> {
                 );
 
                 ctx.world
-                    .spawn(Thing::new(transform, mesh).with_material(material));
+                    .spawn(Entity::new(transform, mesh).with_material(material));
             }
 
             State { material: original }

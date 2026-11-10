@@ -1,8 +1,8 @@
-use nyra::{App, Material, Mesh, RunError, Thing, ThingID, Transform};
+use nyra::{App, Entity, EntityID, Material, Mesh, RunError, Transform};
 use nyra_math::Quat;
 
 struct AnimationState {
-    cube: ThingID,
+    cube: EntityID,
     angle: f32,
 }
 
@@ -14,7 +14,7 @@ fn main() -> Result<(), RunError> {
 
             let cube = ctx
                 .world
-                .spawn(Thing::new(Transform::default(), mesh).with_material(material));
+                .spawn(Entity::new(Transform::default(), mesh).with_material(material));
 
             AnimationState { cube, angle: 0.0 }
         })
