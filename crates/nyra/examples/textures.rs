@@ -1,5 +1,5 @@
-use nyra::{App, Entity, Material, Mesh, RunError, Texture, Transform};
-use nyra_math::{Quat, Vec3};
+use nyra::{App, Entity, Material, Mesh, RunError, Texture};
+use nyra_math::{Quat, Transform, Vec3};
 
 fn main() -> Result<(), RunError> {
     App::new()

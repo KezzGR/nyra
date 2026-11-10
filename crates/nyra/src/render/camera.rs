@@ -1,6 +1,4 @@
-use nyra_math::{Mat4, projection, view};
-
-use crate::Transform;
+use nyra_math::{Mat4, Transform, projection, view};
 
 pub struct Camera {
     pub transform: Transform,
@@ -23,7 +21,7 @@ impl Default for Camera {
 impl Camera {
     pub fn new(transform: Transform, vertical_fov: f32, near: f32, far: f32) -> Self {
         Self {
-            transform: Transform::new(transform.position, transform.rotation, transform.scale),
+            transform,
             vertical_fov,
             near,
             far,

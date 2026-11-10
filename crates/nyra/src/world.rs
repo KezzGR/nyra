@@ -2,7 +2,6 @@ mod directional_light;
 mod entity;
 mod entity_id;
 mod environment;
-mod transform;
 
 use std::ops::{Index, IndexMut};
 
@@ -10,7 +9,6 @@ pub use directional_light::DirectionalLight;
 pub use entity::Entity;
 pub use entity_id::EntityID;
 pub use environment::Environment;
-pub use transform::Transform;
 
 #[derive(Default)]
 pub struct World {

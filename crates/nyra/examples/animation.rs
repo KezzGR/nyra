@@ -1,5 +1,5 @@
-use nyra::{App, Entity, EntityID, Material, Mesh, RunError, Transform};
-use nyra_math::Quat;
+use nyra::{App, Entity, EntityID, Material, Mesh, RunError};
+use nyra_math::{Quat, Transform};
 
 struct AnimationState {
     cube: EntityID,

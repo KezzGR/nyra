@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use nyra_math::{Quat, Vec2, Vec3};
+use nyra_math::{Quat, Transform, Vec2, Vec3};
 use winit::{
     application::ApplicationHandler,
     error::EventLoopError,
@@ -11,8 +11,8 @@ use winit::{
 };
 
 use crate::{
-    Assets, Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, Transform,
-    render::Camera, world::World,
+    Assets, Cursor, CursorState, GameContext, Input, Mouse, Renderer, Time, render::Camera,
+    world::World,
 };
 
 pub struct App<S = ()> {

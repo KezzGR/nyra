@@ -1,7 +1,5 @@
-use nyra::{
-    App, Entity, EntityID, KeyCode, Material, MaterialID, Mesh, MeshID, RunError, Transform,
-};
-use nyra_math::{Quat, Vec3};
+use nyra::{App, Entity, EntityID, KeyCode, Material, MaterialID, Mesh, MeshID, RunError};
+use nyra_math::{Quat, Transform, Vec3};
 
 struct SpawnState {
     mesh: MeshID,

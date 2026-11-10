@@ -36,7 +36,6 @@ pub use crate::world::DirectionalLight;
 pub use crate::world::Entity;
 pub use crate::world::EntityID;
 pub use crate::world::Environment;
-pub use crate::world::Transform;
 pub use crate::world::World;
 pub use winit::error::EventLoopError as RunError;
 pub use winit::keyboard::KeyCode;

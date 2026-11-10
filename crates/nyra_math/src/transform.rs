@@ -1,4 +1,4 @@
-use nyra_math::{Mat4, Quat, Vec3};
+use crate::{Mat4, Quat, Vec3};
 
 pub struct Transform {
     pub position: Vec3,
@@ -37,7 +37,7 @@ impl Transform {
         self.rotation = Quat::from_axis_angle(axis.normalize(), angle);
     }
 
-    pub fn model_matrix(&self) -> Mat4 {
+    pub fn to_matrix(&self) -> Mat4 {
         Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.position)
     }
 

@@ -1,5 +1,5 @@
-use nyra::{App, Entity, Material, Mesh, RunError, Transform};
-use nyra_math::Quat;
+use nyra::{App, Entity, Material, Mesh, RunError};
+use nyra_math::{Quat, Transform};
 
 fn main() -> Result<(), RunError> {
     App::new()

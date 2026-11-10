@@ -1,5 +1,5 @@
-use nyra::{App, Entity, FreeFlyController, Material, Mesh, RunError, Transform};
-use nyra_math::{Quat, Vec3};
+use nyra::{App, Entity, FreeFlyController, Material, Mesh, RunError};
+use nyra_math::{Quat, Transform, Vec3};
 
 const SUN_SPEED: f32 = 0.5;
 const SUN_HEIGHT: f32 = 1.5;

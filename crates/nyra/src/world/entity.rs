@@ -1,4 +1,6 @@
-use crate::{EntityID, MaterialID, MeshID, Transform};
+use nyra_math::Transform;
+
+use crate::{EntityID, MaterialID, MeshID};
 
 pub struct Entity {
     pub id: EntityID,

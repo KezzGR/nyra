@@ -1,5 +1,5 @@
-use nyra::{App, Entity, Material, MaterialID, Mesh, RunError, Texture, Transform};
-use nyra_math::{Quat, Vec2, Vec3};
+use nyra::{App, Entity, Material, MaterialID, Mesh, RunError, Texture};
+use nyra_math::{Quat, Transform, Vec2, Vec3};
 
 struct State {
     material: MaterialID,
