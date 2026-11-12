@@ -175,17 +175,25 @@ impl Mul<Mat4> for Mat4 {
     type Output = Mat4;
 
     fn mul(self, rhs: Mat4) -> Self::Output {
-        let mut cols = [[0.0; 4]; 4];
+        Self::from_cols(
+            self * rhs.cols[0],
+            self * rhs.cols[1],
+            self * rhs.cols[2],
+            self * rhs.cols[3],
+        )
+    }
+}
 
-        for col in 0..4 {
-            for row in 0..4 {
-                for k in 0..4 {
-                    cols[col][row] += self.cols[k][row] * rhs.cols[col][k];
-                }
-            }
-        }
+impl Mul<Vec4> for Mat4 {
+    type Output = Vec4;
 
-        Self::from_cols_array(cols)
+    fn mul(self, rhs: Vec4) -> Self::Output {
+        Vec4::new(
+            self.row(0).dot(rhs),
+            self.row(1).dot(rhs),
+            self.row(2).dot(rhs),
+            self.row(3).dot(rhs),
+        )
     }
 }
 
@@ -499,6 +507,33 @@ mod tests {
     }
 
     #[test]
+    fn transpose_of_product() {
+        let a = Mat4::from_cols(
+            Vec4::new(1.0, 2.0, 3.0, 4.0),
+            Vec4::new(5.0, 6.0, 7.0, 8.0),
+            Vec4::new(9.0, 10.0, 11.0, 12.0),
+            Vec4::new(13.0, 14.0, 15.0, 16.0),
+        );
+
+        let b = Mat4::from_cols(
+            Vec4::new(2.0, 0.0, 1.0, 0.0),
+            Vec4::new(0.0, 3.0, 0.0, 0.0),
+            Vec4::new(0.0, 0.0, 4.0, 0.0),
+            Vec4::new(5.0, -2.0, 1.0, 1.0),
+        );
+
+        let expected = Mat4::from_cols(
+            Vec4::new(11.0, 15.0, 36.0, 17.0),
+            Vec4::new(14.0, 18.0, 40.0, 22.0),
+            Vec4::new(17.0, 21.0, 44.0, 27.0),
+            Vec4::new(20.0, 24.0, 48.0, 32.0),
+        );
+
+        assert_eq!(b.transpose() * a.transpose(), expected);
+        assert_eq!((a * b).transpose(), expected);
+    }
+
+    #[test]
     fn matrix_multiplication() {
         let a = Mat4::from_cols(
             Vec4::new(1.0, 2.0, 3.0, 4.0),
@@ -522,6 +557,46 @@ mod tests {
         );
 
         assert_eq!(a * b, expected);
+    }
+
+    #[test]
+    fn matrix_multiplication_by_columns() {
+        let a = Mat4::from_cols(
+            Vec4::new(1.0, 2.0, 3.0, 4.0),
+            Vec4::new(5.0, 6.0, 7.0, 8.0),
+            Vec4::new(9.0, 10.0, 11.0, 12.0),
+            Vec4::new(13.0, 14.0, 15.0, 16.0),
+        );
+
+        let b = Mat4::from_cols(
+            Vec4::new(1.0, 0.0, 0.0, 0.0),
+            Vec4::new(0.0, 1.0, 0.0, 0.0),
+            Vec4::new(0.0, 0.0, 1.0, 0.0),
+            Vec4::new(1.0, 2.0, 3.0, 1.0),
+        );
+
+        let product = a * b;
+
+        assert_eq!(product.col(0), a.col(0));
+        assert_eq!(product.col(1), a.col(1));
+        assert_eq!(product.col(2), a.col(2));
+        assert_eq!(product.col(3), Vec4::new(51.0, 58.0, 65.0, 72.0));
+    }
+
+    #[test]
+    fn matrix_vector_multiplication() {
+        let matrix = Mat4::from_cols(
+            Vec4::new(1.0, 2.0, 3.0, 4.0),
+            Vec4::new(5.0, 6.0, 7.0, 8.0),
+            Vec4::new(9.0, 10.0, 11.0, 12.0),
+            Vec4::new(13.0, 14.0, 15.0, 16.0),
+        );
+
+        let vector = Vec4::new(2.0, 3.0, 4.0, 5.0);
+
+        let expected = Vec4::new(118.0, 132.0, 146.0, 160.0);
+
+        assert_eq!(matrix * vector, expected);
     }
 
     #[test]
