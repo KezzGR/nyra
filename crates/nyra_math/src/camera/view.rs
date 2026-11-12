@@ -20,6 +20,8 @@ pub fn look_to_lh(camera_position: Vec3, camera_direction: Vec3, up: Vec3) -> Ma
 
 #[cfg(test)]
 mod tests {
+    use crate::Vec4;
+
     use super::*;
 
     #[test]
@@ -41,10 +43,10 @@ mod tests {
         let view = look_to_lh(Vec3::ZERO, Vec3::X, Vec3::Y);
 
         let expected = Mat4::from_cols(
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
+            Vec4::new(0.0, 0.0, 1.0, 0.0),
+            Vec4::new(0.0, 1.0, 0.0, 0.0),
+            Vec4::new(-1.0, 0.0, 0.0, 0.0),
+            Vec4::new(0.0, 0.0, 0.0, 1.0),
         );
 
         assert_eq!(view, expected);
