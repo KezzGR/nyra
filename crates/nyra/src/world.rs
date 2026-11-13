@@ -9,6 +9,7 @@ pub use directional_light::DirectionalLight;
 pub use entity::Entity;
 pub use entity_id::EntityID;
 pub use environment::Environment;
+use nyra_math::Mat4;
 
 #[derive(Default)]
 pub struct World {
@@ -45,6 +46,39 @@ impl World {
 
     pub fn get_mut(&mut self, id: EntityID) -> Option<&mut Entity> {
         self.entities.iter_mut().find(|entity| entity.id == id)
+    }
+
+    pub fn set_parent(&mut self, child_id: EntityID, parent_id: EntityID) {
+        if self.get(child_id).is_none() || self.get(parent_id).is_none() {
+            panic!("AAAAAAAAAAAAA PIZDETS")
+        }
+
+        let mut current = Some(parent_id);
+
+        while let Some(id) = current {
+            if id == child_id {
+                panic!("AAAAAAAAAAAAAAAAAAAA")
+            }
+
+            current = self.get_mut(id).unwrap().parent;
+        }
+
+        self.get_mut(child_id).unwrap().parent = Some(parent_id);
+    }
+
+    pub fn model_matrix(&self, id: EntityID) -> Mat4 {
+        let mut current = Some(id);
+        let mut matrix = Mat4::IDENTITY;
+
+        while let Some(id) = current {
+            let entity = self.get(id).unwrap();
+
+            matrix = entity.transform.to_matrix() * matrix;
+
+            current = entity.parent;
+        }
+
+        matrix
     }
 }
 

@@ -8,6 +8,7 @@ pub struct Entity {
     pub mesh_id: MeshID,
     pub visible: bool,
     pub material: Option<MaterialID>,
+    pub parent: Option<EntityID>,
 }
 
 impl Entity {
@@ -18,6 +19,7 @@ impl Entity {
             id: EntityID(0),
             visible: true,
             material: None,
+            parent: None,
         }
     }
 

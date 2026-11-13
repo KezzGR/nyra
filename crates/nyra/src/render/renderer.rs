@@ -366,7 +366,7 @@ impl Renderer {
                     &gpu_entity.uniform_buffer,
                     0,
                     bytemuck::bytes_of(&TransformUniform::new(
-                        entity.transform.to_matrix().to_cols_array(),
+                        world.model_matrix(entity.id).to_cols_array(),
                         projection_view.to_cols_array(),
                     )),
                 );
