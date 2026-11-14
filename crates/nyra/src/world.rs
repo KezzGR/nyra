@@ -52,6 +52,18 @@ impl World {
         }
     }
 
+    pub fn despawn_only(&mut self, entity_id: EntityID) {
+        let Some(entity) = self.entities.remove(&entity_id) else {
+            return;
+        };
+
+        for child in self.entities.values_mut() {
+            if child.parent == Some(entity_id) {
+                child.parent = entity.parent;
+            }
+        }
+    }
+
     pub fn get(&self, id: EntityID) -> Option<&Entity> {
         self.entities.get(&id)
     }
@@ -76,6 +88,12 @@ impl World {
         }
 
         self.get_mut(child_id).unwrap().parent = Some(parent_id);
+    }
+
+    pub fn clear_parent(&mut self, entity_id: EntityID) {
+        if let Some(entity) = self.entities.get_mut(&entity_id) {
+            entity.parent = None;
+        }
     }
 
     pub fn model_matrix(&self, id: EntityID) -> Mat4 {
