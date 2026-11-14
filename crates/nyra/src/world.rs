@@ -3,7 +3,10 @@ mod entity;
 mod entity_id;
 mod environment;
 
-use std::ops::{Index, IndexMut};
+use std::{
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
 pub use directional_light::DirectionalLight;
 pub use entity::Entity;
@@ -13,39 +16,32 @@ use nyra_math::Mat4;
 
 #[derive(Default)]
 pub struct World {
-    pub entities: Vec<Entity>,
+    pub entities: HashMap<EntityID, Entity>,
     pub environment: Environment,
-    next_id: u64,
+    next_entity_id: u64,
 }
 
 impl World {
-    pub fn spawn(&mut self, mut entity: Entity) -> EntityID {
-        let id = EntityID(self.next_id);
+    pub fn spawn(&mut self, entity: Entity) -> EntityID {
+        let id = EntityID(self.next_entity_id);
 
-        self.next_id += 1;
-        entity.id = id;
+        self.next_entity_id += 1;
 
-        self.entities.push(entity);
+        self.entities.insert(id, entity);
 
         id
     }
 
     pub fn despawn(&mut self, entity_id: EntityID) {
-        if let Some(index) = self
-            .entities
-            .iter()
-            .position(|entity| entity.id == entity_id)
-        {
-            self.entities.remove(index);
-        }
+        self.entities.remove(&entity_id);
     }
 
     pub fn get(&self, id: EntityID) -> Option<&Entity> {
-        self.entities.iter().find(|entity| entity.id == id)
+        self.entities.get(&id)
     }
 
     pub fn get_mut(&mut self, id: EntityID) -> Option<&mut Entity> {
-        self.entities.iter_mut().find(|entity| entity.id == id)
+        self.entities.get_mut(&id)
     }
 
     pub fn set_parent(&mut self, child_id: EntityID, parent_id: EntityID) {
@@ -60,7 +56,7 @@ impl World {
                 panic!("AAAAAAAAAAAAAAAAAAAA")
             }
 
-            current = self.get_mut(id).unwrap().parent;
+            current = self.get(id).unwrap().parent;
         }
 
         self.get_mut(child_id).unwrap().parent = Some(parent_id);

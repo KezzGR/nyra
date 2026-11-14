@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
     BufferBindingType, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
@@ -331,7 +328,7 @@ impl Renderer {
 
             render_pass.set_bind_group(3, Some(&self.gpu_environment.bind_group), &[]);
 
-            for entity in &world.entities {
+            for (entity_id, entity) in &world.entities {
                 if let Some(renderable) = entity.renderable.as_ref() {
                     if !renderable.visible {
                         continue;
@@ -339,7 +336,7 @@ impl Renderer {
 
                     let gpu_entity = self
                         .gpu_entities
-                        .get(&entity.id)
+                        .get(&entity_id)
                         .expect("GpuEntity missing after synchronization");
 
                     let gpu_mesh = self
@@ -350,16 +347,13 @@ impl Renderer {
                     if let Some(material_id) = renderable.material_id.as_ref() {
                         let gpu_material = self
                             .gpu_materials
-                            .get(&material_id)
-                            .unwrap_or_else(|| &self.default_gpu_material);
+                            .get(material_id)
+                            .expect("GpuMaterial missing after synchronization");
 
                         render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
 
-                        if let Some(texture) = &assets
-                            .material_storage
-                            .get(&material_id)
-                            .unwrap()
-                            .texture_id
+                        if let Some(texture) =
+                            &assets.material_storage.get(material_id).unwrap().texture_id
                         {
                             let gpu_texture = self
                                 .gpu_textures
@@ -387,7 +381,7 @@ impl Renderer {
                         &gpu_entity.uniform_buffer,
                         0,
                         bytemuck::bytes_of(&TransformUniform::new(
-                            world.model_matrix(entity.id).to_cols_array(),
+                            world.model_matrix(*entity_id).to_cols_array(),
                             projection_view.to_cols_array(),
                         )),
                     );
@@ -481,22 +475,20 @@ impl Renderer {
     }
 
     fn sync_entities(&mut self, world: &World) {
-        let alive: HashSet<EntityID> = world
-            .entities
-            .iter()
-            .filter(|entity| entity.renderable.is_some())
-            .map(|entity| entity.id)
-            .collect();
+        self.gpu_entities.retain(|id, _| {
+            world
+                .entities
+                .get(id)
+                .is_some_and(|entity| entity.renderable.is_some())
+        });
 
-        self.gpu_entities.retain(|id, _| alive.contains(id));
-
-        for entity in &world.entities {
+        for (entity_id, entity) in &world.entities {
             if entity.renderable.is_none() {
                 continue;
             }
 
             self.gpu_entities
-                .entry(entity.id)
+                .entry(*entity_id)
                 .or_insert_with(|| GpuEntity::new(&self.device, &self.transform_bind_group_layout));
         }
     }

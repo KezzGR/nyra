@@ -3,7 +3,6 @@ use nyra_math::Transform;
 use crate::{EntityID, MaterialID, MeshID, Renderable};
 
 pub struct Entity {
-    pub id: EntityID,
     pub transform: Transform,
     pub renderable: Option<Renderable>,
     pub parent: Option<EntityID>,
@@ -12,7 +11,6 @@ pub struct Entity {
 impl Entity {
     pub fn empty(transform: Transform) -> Self {
         Self {
-            id: EntityID(0),
             transform,
             renderable: None,
             parent: None,
@@ -21,7 +19,6 @@ impl Entity {
 
     pub fn from_mesh(transform: Transform, mesh_id: MeshID) -> Self {
         Self {
-            id: EntityID(0),
             transform,
             renderable: Some(Renderable::new(mesh_id)),
             parent: None,
