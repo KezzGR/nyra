@@ -1,30 +1,38 @@
 use nyra_math::Transform;
 
-use crate::{EntityID, MaterialID, MeshID};
+use crate::{EntityID, MaterialID, MeshID, Renderable};
 
 pub struct Entity {
     pub id: EntityID,
     pub transform: Transform,
-    pub mesh_id: MeshID,
-    pub visible: bool,
-    pub material: Option<MaterialID>,
+    pub renderable: Option<Renderable>,
     pub parent: Option<EntityID>,
 }
 
 impl Entity {
-    pub fn new(transform: Transform, mesh_id: MeshID) -> Self {
+    pub fn empty(transform: Transform) -> Self {
         Self {
-            transform,
-            mesh_id,
             id: EntityID(0),
-            visible: true,
-            material: None,
+            transform,
+            renderable: None,
             parent: None,
         }
     }
 
-    pub fn with_material(mut self, material: MaterialID) -> Self {
-        self.material = Some(material);
+    pub fn from_mesh(transform: Transform, mesh_id: MeshID) -> Self {
+        Self {
+            id: EntityID(0),
+            transform,
+            renderable: Some(Renderable::new(mesh_id)),
+            parent: None,
+        }
+    }
+
+    pub fn with_material(mut self, material_id: MaterialID) -> Self {
+        self.renderable
+            .as_mut()
+            .expect("Cannot assign material to an empty entity")
+            .set_material(material_id);
 
         self
     }

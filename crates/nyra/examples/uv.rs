@@ -33,7 +33,7 @@ fn main() -> Result<(), RunError> {
                 );
 
                 ctx.world
-                    .spawn(Entity::new(transform, mesh).with_material(material));
+                    .spawn(Entity::from_mesh(transform, mesh).with_material(material));
             }
 
             State { material: original }

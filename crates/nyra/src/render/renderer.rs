@@ -19,8 +19,8 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{
-    Assets, EntityID, EnvironmentUniform, GpuEnvironment, GpuTexture, MaterialID, MaterialUniform,
-    MeshID, Texture, TextureID,
+    Assets, EntityID, EnvironmentUniform, GpuEnvironment, GpuTexture, Material, MaterialID,
+    MaterialUniform, MeshID, Texture, TextureID,
     render::{Camera, GpuEntity, GpuMaterial, GpuMesh, TransformUniform, Vertex},
     world::World,
 };
@@ -44,6 +44,7 @@ pub struct Renderer {
     material_bind_group_layout: BindGroupLayout,
     texture_bind_group_layout: BindGroupLayout,
     pipeline: RenderPipeline,
+    default_gpu_material: GpuMaterial,
     fallback_texture: GpuTexture,
     gpu_meshes: HashMap<MeshID, GpuMesh>,
     gpu_entities: HashMap<EntityID, GpuEntity>,
@@ -212,6 +213,19 @@ impl Renderer {
             cache: None,
         });
 
+        let default_material = Material::default();
+        let default_gpu_material = GpuMaterial::new(&device, &material_bind_group_layout);
+
+        queue.write_buffer(
+            &default_gpu_material.uniform_buffer,
+            0,
+            bytemuck::bytes_of(&MaterialUniform::new(
+                default_material.base_color,
+                default_material.uv_scale.to_array(),
+                default_material.uv_offset.to_array(),
+            )),
+        );
+
         let fallback_texture = GpuTexture::new(
             &Texture::default(),
             &device,
@@ -233,6 +247,7 @@ impl Renderer {
             material_bind_group_layout,
             texture_bind_group_layout,
             pipeline,
+            default_gpu_material,
             fallback_texture,
             gpu_meshes: HashMap::default(),
             gpu_entities: HashMap::default(),
@@ -317,65 +332,75 @@ impl Renderer {
             render_pass.set_bind_group(3, Some(&self.gpu_environment.bind_group), &[]);
 
             for entity in &world.entities {
-                if !entity.visible {
-                    continue;
-                }
+                if let Some(renderable) = entity.renderable.as_ref() {
+                    if !renderable.visible {
+                        continue;
+                    }
 
-                let material_id: &MaterialID;
+                    let gpu_entity = self
+                        .gpu_entities
+                        .get(&entity.id)
+                        .expect("GpuEntity missing after synchronization");
 
-                if let Some(material) = &entity.material {
-                    material_id = material;
+                    let gpu_mesh = self
+                        .gpu_meshes
+                        .get(&renderable.mesh_id)
+                        .expect("GpuMesh missing after synchronization");
 
-                    if let Some(texture) = &assets
-                        .material_storage
-                        .get(material)
-                        .expect("Material missing")
-                        .texture_id
-                    {
-                        let gpu_texture = self
-                            .gpu_textures
-                            .get(texture)
-                            .expect("GpuTexture missing after synchronization");
+                    if let Some(material_id) = renderable.material_id.as_ref() {
+                        let gpu_material = self
+                            .gpu_materials
+                            .get(&material_id)
+                            .unwrap_or_else(|| &self.default_gpu_material);
 
-                        render_pass.set_bind_group(2, Some(&gpu_texture.bind_group), &[]);
+                        render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
+
+                        if let Some(texture) = &assets
+                            .material_storage
+                            .get(&material_id)
+                            .unwrap()
+                            .texture_id
+                        {
+                            let gpu_texture = self
+                                .gpu_textures
+                                .get(texture)
+                                .expect("GpuTexture missing after synchronization");
+
+                            render_pass.set_bind_group(2, Some(&gpu_texture.bind_group), &[]);
+                        } else {
+                            render_pass.set_bind_group(
+                                2,
+                                Some(&self.fallback_texture.bind_group),
+                                &[],
+                            );
+                        }
                     } else {
+                        render_pass.set_bind_group(
+                            1,
+                            Some(&self.default_gpu_material.bind_group),
+                            &[],
+                        );
                         render_pass.set_bind_group(2, Some(&self.fallback_texture.bind_group), &[]);
                     }
+
+                    self.queue.write_buffer(
+                        &gpu_entity.uniform_buffer,
+                        0,
+                        bytemuck::bytes_of(&TransformUniform::new(
+                            world.model_matrix(entity.id).to_cols_array(),
+                            projection_view.to_cols_array(),
+                        )),
+                    );
+
+                    render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                    render_pass
+                        .set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
+
+                    render_pass.set_bind_group(0, Some(&gpu_entity.uniform_bind_group), &[]);
+                    render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
                 } else {
                     continue;
-                };
-
-                let gpu_mesh = self
-                    .gpu_meshes
-                    .get(&entity.mesh_id)
-                    .expect("GpuMesh missing after synchronization");
-
-                let gpu_entity = self
-                    .gpu_entities
-                    .get(&entity.id)
-                    .expect("GpuEntity missing after synchronization");
-
-                let gpu_material = self
-                    .gpu_materials
-                    .get(material_id)
-                    .expect("GpuMaterial missing after synchronization");
-
-                render_pass.set_bind_group(1, Some(&gpu_material.bind_group), &[]);
-
-                self.queue.write_buffer(
-                    &gpu_entity.uniform_buffer,
-                    0,
-                    bytemuck::bytes_of(&TransformUniform::new(
-                        world.model_matrix(entity.id).to_cols_array(),
-                        projection_view.to_cols_array(),
-                    )),
-                );
-
-                render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
-                render_pass.set_index_buffer(gpu_mesh.index_buffer.slice(..), IndexFormat::Uint32);
-
-                render_pass.set_bind_group(0, Some(&gpu_entity.uniform_bind_group), &[]);
-                render_pass.draw_indexed(0..gpu_mesh.index_count, 0, 0..1);
+                }
             }
         }
 
@@ -456,11 +481,20 @@ impl Renderer {
     }
 
     fn sync_entities(&mut self, world: &World) {
-        let alive: HashSet<EntityID> = world.entities.iter().map(|entity| entity.id).collect();
+        let alive: HashSet<EntityID> = world
+            .entities
+            .iter()
+            .filter(|entity| entity.renderable.is_some())
+            .map(|entity| entity.id)
+            .collect();
 
         self.gpu_entities.retain(|id, _| alive.contains(id));
 
         for entity in &world.entities {
+            if entity.renderable.is_none() {
+                continue;
+            }
+
             self.gpu_entities
                 .entry(entity.id)
                 .or_insert_with(|| GpuEntity::new(&self.device, &self.transform_bind_group_layout));

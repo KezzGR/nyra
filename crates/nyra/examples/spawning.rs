@@ -1,9 +1,8 @@
-use nyra::{App, Entity, EntityID, KeyCode, Material, MaterialID, Mesh, MeshID, RunError};
+use nyra::{App, Entity, EntityID, KeyCode, Mesh, MeshID, RunError};
 use nyra_math::{Quat, Transform, Vec3};
 
 struct SpawnState {
     mesh: MeshID,
-    material: MaterialID,
     objects: Vec<EntityID>,
 }
 
@@ -13,7 +12,6 @@ fn main() -> Result<(), RunError> {
     App::new()
         .setup_with_state(|ctx| SpawnState {
             mesh: ctx.assets.add_mesh(Mesh::cube()),
-            material: ctx.assets.add_material(Material::default()),
             objects: Vec::new(),
         })
         .run_each_frame_with_state(|ctx, state| {
@@ -29,9 +27,7 @@ fn main() -> Result<(), RunError> {
                     Vec3::splat(0.9),
                 );
 
-                let id = ctx
-                    .world
-                    .spawn(Entity::new(transform, state.mesh).with_material(state.material));
+                let id = ctx.world.spawn(Entity::from_mesh(transform, state.mesh));
 
                 state.objects.push(id);
             }

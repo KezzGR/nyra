@@ -1,4 +1,4 @@
-use nyra::{App, Entity, FreeFlyController, Material, Mesh, RunError};
+use nyra::{App, Entity, FreeFlyController, Mesh, RunError};
 use nyra_math::{Quat, Transform, Vec3};
 
 const SUN_SPEED: f32 = 0.5;
@@ -14,7 +14,6 @@ fn main() -> Result<(), RunError> {
     App::new()
         .setup_with_state(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cube());
-            let material = ctx.assets.add_material(Material::default());
 
             for (x, rotation) in [(-2.2, -0.6), (0.0, 0.0), (2.2, 0.6)] {
                 let transform = Transform::new(
@@ -23,8 +22,7 @@ fn main() -> Result<(), RunError> {
                     Vec3::ONE,
                 );
 
-                ctx.world
-                    .spawn(Entity::new(transform, mesh).with_material(material));
+                ctx.world.spawn(Entity::from_mesh(transform, mesh));
             }
 
             ctx.world.environment.ambient_intensity = 0.2;

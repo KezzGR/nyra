@@ -1,4 +1,4 @@
-use nyra::{App, Entity, EntityID, FreeFlyController, Material, Mesh, RunError};
+use nyra::{App, Entity, EntityID, FreeFlyController, Mesh, RunError};
 use nyra_math::{Quat, Transform, Vec3};
 
 const GRID_DIM: u32 = 10;
@@ -17,7 +17,6 @@ fn main() -> Result<(), RunError> {
             let center = (GRID_DIM as f32 - 1.0) / 2.0;
 
             let mesh = ctx.assets.add_mesh(Mesh::cube());
-            let material = ctx.assets.add_material(Material::default());
 
             let mut cubes = Vec::with_capacity((GRID_DIM * GRID_DIM) as usize);
 
@@ -29,9 +28,7 @@ fn main() -> Result<(), RunError> {
                         Vec3::splat(0.8),
                     );
 
-                    let cube = ctx
-                        .world
-                        .spawn(Entity::new(transform, mesh).with_material(material));
+                    let cube = ctx.world.spawn(Entity::from_mesh(transform, mesh));
 
                     cubes.push(cube);
                 }

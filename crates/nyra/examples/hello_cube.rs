@@ -1,13 +1,12 @@
-use nyra::{App, Entity, Material, Mesh, RunError};
+use nyra::{App, Entity, Mesh, RunError};
 use nyra_math::{Quat, Transform};
 
 fn main() -> Result<(), RunError> {
     App::new()
         .setup(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cube());
-            let material = ctx.assets.add_material(Material::default());
 
-            let mut cube = Entity::new(Transform::default(), mesh).with_material(material);
+            let mut cube = Entity::from_mesh(Transform::default(), mesh);
 
             cube.transform.rotation = Quat::from_rotation_y(-0.6);
 

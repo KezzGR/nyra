@@ -1,11 +1,10 @@
-use nyra::{App, Entity, Material, Mesh, RunError};
+use nyra::{App, Entity, Mesh, RunError};
 use nyra_math::{Quat, Transform, Vec3};
 
 fn main() -> Result<(), RunError> {
     App::new()
         .setup(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cube());
-            let material = ctx.assets.add_material(Material::default());
 
             let transforms = [
                 Transform::new(
@@ -22,8 +21,7 @@ fn main() -> Result<(), RunError> {
             ];
 
             for transform in transforms {
-                ctx.world
-                    .spawn(Entity::new(transform, mesh).with_material(material));
+                ctx.world.spawn(Entity::from_mesh(transform, mesh));
             }
         })
         .run()
