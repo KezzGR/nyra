@@ -33,7 +33,23 @@ impl World {
     }
 
     pub fn despawn(&mut self, entity_id: EntityID) {
-        self.entities.remove(&entity_id);
+        if !self.entities.contains_key(&entity_id) {
+            return;
+        }
+
+        let mut stack = vec![entity_id];
+
+        while let Some(id) = stack.pop() {
+            let children = self
+                .entities
+                .iter()
+                .filter(|(_, entity)| entity.parent == Some(id))
+                .map(|(id, _)| *id);
+
+            stack.extend(children);
+
+            self.entities.remove(&id);
+        }
     }
 
     pub fn get(&self, id: EntityID) -> Option<&Entity> {
