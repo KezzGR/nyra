@@ -27,7 +27,7 @@ fn main() -> Result<(), RunError> {
 
             ctx.world.environment.ambient_intensity = 0.2;
             ctx.world.environment.sun.intensity = 0.8;
-            ctx.world.environment.sun.direction = Vec3::new(1.0, SUN_HEIGHT, 0.0);
+            ctx.world.environment.sun.direction = Vec3::new(1.0, -SUN_HEIGHT, 0.0);
 
             LightDemo { time: 0.0 }
         })
@@ -38,6 +38,6 @@ fn main() -> Result<(), RunError> {
 
             let angle = state.time * SUN_SPEED;
 
-            ctx.world.environment.sun.direction = Vec3::new(angle.cos(), SUN_HEIGHT, angle.sin());
+            ctx.world.environment.sun.direction = Vec3::new(angle.cos(), -SUN_HEIGHT, angle.sin());
         })
 }

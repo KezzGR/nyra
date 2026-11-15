@@ -31,7 +31,7 @@ struct EnvironmentUniform {
 @group(3) @binding(0) var<uniform> environment: EnvironmentUniform;
 @fragment fn fs_main(@location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let normal_dir = normalize(normal);
-    let light_dir = normalize(environment.light_dir);
+    let light_dir = -normalize(environment.light_dir);
     let lambert = max(0.0, dot(normal_dir, light_dir));
     let brightness = environment.ambient_intensity + environment.sun_intensity * lambert;
     let transformed_uv = uv * material.uv_scale + material.uv_offset;
