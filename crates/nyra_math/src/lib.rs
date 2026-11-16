@@ -9,6 +9,7 @@ pub use camera::view;
 pub use matrix::Mat4;
 pub use rotation::Quat;
 pub use transform::Transform;
+pub use vector::DVec3;
 pub use vector::Vec2;
 pub use vector::Vec3;
 pub use vector::Vec4;
