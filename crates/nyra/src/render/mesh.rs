@@ -1,3 +1,5 @@
+use std::f32::consts::{PI, TAU};
+
 use nyra_math::Vec3;
 
 use crate::render::Vertex;
@@ -27,7 +29,7 @@ impl Mesh {
         let mut indices = Vec::with_capacity(36);
 
         let axes: [Vec3; 3] = [Vec3::X, Vec3::Y, Vec3::Z];
-        let uves: [[f32; 2]; 4] = [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]];
+        let face_uvs: [[f32; 2]; 4] = [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]];
 
         let half_size = size / 2.0;
 
@@ -52,7 +54,7 @@ impl Mesh {
                     face_center - half_edge_a + oriented_half_edge_b,
                 ]
                 .iter()
-                .zip(uves)
+                .zip(face_uvs)
                 {
                     vertices.push(Vertex::new(position.to_array(), face_normal.to_array(), uv));
                 }
@@ -65,6 +67,84 @@ impl Mesh {
                     first_vertex_index + 2,
                     first_vertex_index + 3,
                 ]);
+            }
+        }
+
+        Self { vertices, indices }
+    }
+
+    pub fn sphere() -> Self {
+        Self::uv_sphere(0.5, 32, 16)
+    }
+
+    pub fn uv_sphere(radius: f32, radial_segments: u32, height_segments: u32) -> Self {
+        assert!(
+            radius.is_finite() && radius > 0.0,
+            "Sphere radius must be finite and greater than zero"
+        );
+        assert!(
+            radial_segments >= 3,
+            "Sphere radial segments must be at least 3"
+        );
+        assert!(
+            height_segments >= 2,
+            "Sphere height segments must be at least 2"
+        );
+
+        let mut vertices =
+            Vec::with_capacity(((radial_segments + 1) * (height_segments + 1)) as usize);
+        let mut indices =
+            Vec::with_capacity((6 * radial_segments * (height_segments - 1)) as usize);
+
+        for i in 0..=height_segments {
+            let v = i as f32 / height_segments as f32;
+            let theta = v * PI;
+
+            let (sin_theta, cos_theta) = if i == 0 {
+                (0.0, 1.0)
+            } else if i == height_segments {
+                (0.0, -1.0)
+            } else {
+                theta.sin_cos()
+            };
+
+            for j in 0..=radial_segments {
+                let u = j as f32 / radial_segments as f32;
+                let phi = u * TAU;
+
+                let (sin_phi, cos_phi) = if j == radial_segments {
+                    (0.0, 1.0)
+                } else {
+                    phi.sin_cos()
+                };
+
+                let x = radius * sin_theta * cos_phi;
+                let y = radius * cos_theta;
+                let z = radius * sin_theta * sin_phi;
+
+                let position = Vec3::new(x, y, z);
+                let normal = position / radius;
+
+                vertices.push(Vertex::new(position.to_array(), normal.to_array(), [u, v]));
+            }
+        }
+
+        let row_size = radial_segments + 1;
+
+        for i in 0..height_segments {
+            for j in 0..radial_segments {
+                let a = i * row_size + j;
+                let b = a + 1;
+                let c = a + row_size;
+                let d = c + 1;
+
+                if i != 0 {
+                    indices.extend_from_slice(&[a, b, c]);
+                }
+
+                if i + 1 != height_segments {
+                    indices.extend_from_slice(&[b, d, c]);
+                }
             }
         }
 
