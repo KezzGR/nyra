@@ -8,7 +8,7 @@ It's still early, and the API changes whenever I find a better way to do somethi
 
 ![100 cubes moving in a wave](assets/cube-wave.gif)
 
-*100 animated cubes sharing one mesh and one material. No instancing yet.*
+*100 animated cubes sharing one mesh and the default material. No instancing yet.*
 
 ## Getting started
 
@@ -28,8 +28,9 @@ To explore the other examples, replace `hello_cube` with any name below.
 | --- | --- |
 | [`hello_window`](crates/nyra/examples/hello_window.rs) | Open an empty window with `App::new().run()` |
 | [`title`](crates/nyra/examples/title.rs) | Set a custom window title |
-| [`hello_cube`](crates/nyra/examples/hello_cube.rs) | Create a mesh, material, and your first 3D entity |
-| [`multiple_objects`](crates/nyra/examples/multiple_objects.rs) | Share the same mesh and material between multiple entities |
+| [`hello_cube`](crates/nyra/examples/hello_cube.rs) | Create and render your first cube with the default material |
+| [`hello_sphere`](crates/nyra/examples/hello_sphere.rs) | Compare low-poly and smooth procedural UV spheres |
+| [`multiple_objects`](crates/nyra/examples/multiple_objects.rs) | Share one mesh between multiple entities |
 | [`transforms`](crates/nyra/examples/transforms.rs) | Position, rotate, and scale entities |
 | [`materials`](crates/nyra/examples/materials.rs) | Give entities different colors using materials |
 | [`textures`](crates/nyra/examples/textures.rs) | Load a PNG and reuse it with different material colors |
@@ -39,7 +40,7 @@ To explore the other examples, replace `hello_cube` with any name below.
 | [`free_camera`](crates/nyra/examples/free_camera.rs) | Move around a scene with the free-fly camera |
 | [`animation`](crates/nyra/examples/animation.rs) | Update an entity every frame using application state and delta time |
 | [`spawning`](crates/nyra/examples/spawning.rs) | Spawn entities with Space and remove them with Backspace |
-| [`cube_wave`](crates/nyra/examples/cube_wave.rs) | Animate 100 cubes sharing a mesh and material |
+| [`cube_wave`](crates/nyra/examples/cube_wave.rs) | Animate 100 cubes sharing one mesh |
 
 Run any example from the repository root:
 
@@ -54,7 +55,7 @@ In examples with the free-fly camera, use **WASD** to move and the **mouse** to 
 This creates a cube and rotates it every frame. `setup_with_state()` returns user-defined state, and `run_each_frame_with_state()` receives it on each frame:
 
 ```rust
-use nyra::{App, Entity, EntityID, Material, Mesh, RunError};
+use nyra::{App, Entity, EntityID, Mesh, RunError};
 use nyra_math::{Quat, Transform};
 
 struct AnimationState {
@@ -66,11 +67,7 @@ fn main() -> Result<(), RunError> {
     App::new()
         .setup_with_state(|ctx| {
             let mesh = ctx.assets.add_mesh(Mesh::cube());
-            let material = ctx.assets.add_material(Material::default());
-
-            let cube = ctx.world.spawn(
-                Entity::new(Transform::default(), mesh).with_material(material)
-            );
+            let cube = ctx.world.spawn(Entity::from_mesh(Transform::default(), mesh));
 
             AnimationState { cube, angle: 0.0 }
         })
@@ -84,19 +81,60 @@ fn main() -> Result<(), RunError> {
 
 You don't have to use application state. For simpler programs, use `setup()` to initialize a scene and `run()` to display it, or `run_each_frame()` to execute a callback every frame without a separate state.
 
-An `Entity` without a material is currently skipped by the mesh render pipeline. Assign a material explicitly, including when using `Material::default()`.
+Entities created with `Entity::from_mesh()` use a default material unless you assign one with `.with_material(material_id)`. `Entity::empty()` creates an entity without a renderable mesh, useful as a parent or transform node.
 
 ## What works
 
 - **Rendering:** 3D meshes through `wgpu`, perspective projection, depth testing, and basic directional and ambient lighting.
-- **Geometry:** built-in cubes and cuboids, custom meshes with vertex and index data, and runtime mesh uploads.
+- **Geometry:** built-in cubes, cuboids, and UV spheres; custom meshes with vertex and index data; and runtime mesh uploads.
 - **Assets:** separate storage for meshes, materials, and textures, referenced by `MeshID`, `MaterialID`, and `TextureID`.
-- **Materials:** RGBA base colors, texture assignment, runtime color changes, and UV scale and offset controls.
+- **Materials:** a shared default material, RGBA base colors, texture assignment, runtime color changes, and UV scale and offset controls.
 - **Textures:** PNG loading, texture reuse across materials, and repeating UV coordinates.
 - **Environment:** configurable sun direction and intensity, along with ambient light intensity. Lighting parameters can be changed every frame.
-- **World:** spawn, access, transform, hide, and despawn entities using `EntityID`.
+- **World:** entities stored by `EntityID`, optional rendering, visibility control, parent-child hierarchies, inherited transforms, and multiple ways to remove entities.
 - **Application and input:** `winit` event loop, keyboard and mouse input, delta time, cursor control, custom window titles, application exit, and a free-fly camera.
 - **Math:** a separate `nyra_math` crate with vectors, quaternions, matrices, transforms, and camera calculations instead of `glam`.
+
+### Procedural geometry
+
+Nyra can generate cubes, cuboids, and UV spheres without loading model files:
+
+```rust
+let cube = ctx.assets.add_mesh(Mesh::cube());
+let sphere = ctx.assets.add_mesh(Mesh::sphere());
+let low_poly_sphere = ctx.assets.add_mesh(Mesh::uv_sphere(0.5, 8, 4));
+```
+
+`Mesh::sphere()` creates a UV sphere with radius `0.5`, 32 radial segments, and 16 height segments. Use `Mesh::uv_sphere(radius, radial_segments, height_segments)` to control its size and detail. The [`hello_sphere`](crates/nyra/examples/hello_sphere.rs) example shows two levels of detail side by side.
+
+### Entity hierarchies
+
+An entity can be a renderable object or an empty transform node. Children inherit their parents' transforms:
+
+```rust
+use nyra::{Entity, Mesh};
+use nyra_math::{Quat, Transform, Vec3};
+
+let mesh = ctx.assets.add_mesh(Mesh::cube());
+let parent = ctx.world.spawn(Entity::empty(Transform::default()));
+
+let child_transform = Transform::new(
+    Vec3::new(1.0, 0.0, 0.0),
+    Quat::IDENTITY,
+    Vec3::ONE,
+);
+let child = ctx.world.spawn(Entity::from_mesh(child_transform, mesh));
+
+ctx.world.set_parent(child, parent);
+```
+
+`World::model_matrix(id)` combines an entity's local transform with its ancestors' transforms. Parent relationships can be changed using `set_parent()` and `clear_parent()`.
+
+- `despawn(id)` removes an entity and all its descendants.
+- `despawn_only(id)` removes only that entity and reassigns its direct children to its former parent.
+- `clear_parent(id)` detaches an entity from its parent without deleting it.
+
+**Current limitation:** changing parent relationships preserves local `Transform` values, **not** world-space transforms. Reparenting or detaching an entity may change its position, rotation, or scale in the world.
 
 ### Lighting
 
@@ -106,13 +144,13 @@ Lighting is configured through `World.environment`, rather than modifying shader
 use nyra_math::Vec3;
 
 ctx.world.environment.sun.direction =
-    Vec3::new(1.0, 3.0, 2.0);
+    Vec3::new(1.0, -3.0, 2.0);
 
 ctx.world.environment.sun.intensity = 0.8;
 ctx.world.environment.ambient_intensity = 0.2;
 ```
 
-These values can also be modified during frame updates. The [`light`](crates/nyra/examples/light.rs) example demonstrates an animated sun direction.
+`sun.direction` describes the direction in which light rays travel; a negative Y component points downward. These values can be modified during frame updates. The [`light`](crates/nyra/examples/light.rs) example demonstrates an animated sun direction.
 
 ### UV transforms
 
@@ -137,9 +175,9 @@ UV parameters can be updated at runtime, making simple effects such as scrolling
 The workspace currently contains two crates:
 
 - **[`nyra`](crates/nyra)**: rendering, application lifecycle, world, assets, camera, input, controllers, and GPU resource management. Scene objects are represented by `Entity` and identified by `EntityID`.
-- **[`nyra_math`](crates/nyra_math)**: my own implementations of `Vec2`, `Vec3`, `Vec4`, `Quat`, `Mat4`, `Transform`, and view/projection math, with tests.
+- **[`nyra_math`](crates/nyra_math)**: my own implementations of `Vec2`, `Vec3`, `DVec3`, `Vec4`, `Quat`, `Mat4`, `Transform`, and view/projection math, with tests.
 
-The engine keeps entities in `World` and shared resources in `Assets`. Each entity has a `nyra_math::Transform` describing its position, rotation, and scale. The renderer maintains GPU-side representations of scene data and synchronizes them during rendering.
+The engine keeps entities in `World` (a `HashMap<EntityID, Entity>`) and shared resources in `Assets`. Each entity has a `nyra_math::Transform` describing its local position, rotation, and scale, an optional `Renderable`, and an optional parent. The renderer maintains GPU-side representations of scene data and synchronizes them during rendering.
 
 ## What's missing
 
